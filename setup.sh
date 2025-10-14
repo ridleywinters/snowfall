@@ -46,7 +46,7 @@ function _prepend_to_path() {
 export RUSTUP_HOME="$REPO_ROOT/bin/rustup"
 export CARGO_HOME="$REPO_ROOT/bin/cargo"
 if [ ! -f "$CARGO_HOME/bin/rustup" ]; then
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -sSf | sh -s -- -y
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -sSf | RUSTUP_INIT_SKIP_PATH_CHECK=yes sh -s -- -y
 fi
 
 _prepend_to_path "$CARGO_HOME/bin"
@@ -58,7 +58,7 @@ unset -f _prepend_to_path
 #==============================================================================
 
 if [ ! -f "$CARGO_HOME/bin/cargo-binstall" ]; then
-    cargo install cargo-binstall -- -y
+    cargo install -y cargo-binstall
 fi
 if [ ! -f "$CARGO_HOME/bin/just" ]; then
     cargo binstall -y just
