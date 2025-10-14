@@ -1,0 +1,10 @@
+dev:
+    watchexec \
+        --watch src \
+        --exts rs,toml,yaml \
+        --restart \
+        "just run && sleep 1"
+
+
+run:
+    cargo run
