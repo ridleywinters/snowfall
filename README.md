@@ -23,8 +23,9 @@ The major phases of development:
 1. Base engine: using Barony as a template, build a block-based, retro-style RPG engine utilizing Bevy
 2. Open world: add city-states, villages, and wilderness to ensure the engine has a Daggerfall massive-world feel
 3. Simulator mechanics: add "Stardew Valley meets Daggerfall" mechanics to ensure the fantasy life simulator goal is being delivered met
-4. Content management: in-game editors and modding
-5. Content & lore: all the core gameplay should be in place, so add more details and variations
+4. Playtest: refine and soldify the rules, mechanics, etc.
+5. Content management: in-game editors and modding
+6. Content & lore: all the core gameplay should be in place, so add more details and variations
 
 Version 2.0
 
@@ -50,3 +51,9 @@ source/             - all source code
     scripts/        - build-related scripts
     tools/          - larger utilities
 ```
+
+## FAQ
+
+#### Why Bevy?
+
+It is has an active community and is well-documented. Ideally less time will be spent reinventing common game engine subsystems by utilizing Bevy. An eventual project goal is to write a custom voxel-based engine (partly, if not mostly, because that would be enjoyable), the higher priority is to ensure the gameplay goals are met. This means custom code should be deprioritized until then.

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# This is the "required" setup script for using the Autumn repo.
+# This is the "required" setup script for using the repo.
 # A couple things to keep in mind:
 #
 # - Try to keep this minimal & fast
@@ -20,7 +20,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   return 1 2>/dev/null || exit 1
 fi
 
-echo "Setting up Autumn development environment..."
+echo "Setting up development environment..."
 echo
 
 #==============================================================================
@@ -86,6 +86,8 @@ fi
 # Output for verification & debugging
 #==============================================================================
 
+# Show the command version and path. Useful for debugging if there are build 
+# issues.
 _show_command_info() {
     local cmd_name="$1"
     local cmd_path version rel_path
@@ -126,7 +128,13 @@ echo
 unset -f _show_command_info
 
 #==============================================================================
-# Done...
+# Aliases and tools
+#==============================================================================
+
+source "$REPO_ROOT/source/scripts/set_aliases.sh"
+
+#==============================================================================
+# Done.
 #==============================================================================
 
 echo "Setup complete. Use 'just' to run common tasks."

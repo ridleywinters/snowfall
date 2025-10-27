@@ -1,3 +1,9 @@
-
 # Rust specific
 target/
+
+# TypeScript related
+node_modules/
+
+
+# General
+.DS_Store

@@ -1,0 +1,15 @@
+
+build:
+    cargo build
+
+dev:
+
+run:
+
+
+test:
+
+lint: 
+
+clean:
+
