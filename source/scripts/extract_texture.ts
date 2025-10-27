@@ -81,9 +81,6 @@ async function main() {
     const outputDir = dirname(outputPng);
     await ensureDir(outputDir);
 
-    console.log(`Loading PNG: ${inputPng}`);
-    console.log(`Resizing to: ${width}x${height}px`);
-
     // Load and resize the PNG to exact dimensions
     await sharp(inputPng)
       .resize(width, height, {
@@ -91,19 +88,14 @@ async function main() {
       })
       .toFile(outputPng);
 
-    console.log(`Saved resized PNG: ${outputPng}`);
-
     // Copy metadata file to output directory with matching basename
     const outputBasename = basename(outputPng, ".png");
     const outputMetaPath = join(outputDir, `${outputBasename}.meta.md`);
 
-    console.log(`Copying metadata: ${metaMd} -> ${outputMetaPath}`);
-
     const metaContent = await Deno.readFile(metaMd);
     await Deno.writeFile(outputMetaPath, metaContent);
 
-    console.log(`Saved metadata: ${outputMetaPath}`);
-    console.log("✓ Extraction complete!");
+    console.log(`✓ Created ${outputPng} (${basename(outputMetaPath)})`);
   } catch (error) {
     if (error instanceof Error) {
       console.error(`Error: ${error.message}`);
