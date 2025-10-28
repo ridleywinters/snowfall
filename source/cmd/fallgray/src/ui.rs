@@ -51,24 +51,29 @@ pub fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     let pico8_red = Color::srgb(1.0, 0.0, 0.3);
     let pico8_green = Color::srgb(0.0, 0.89, 0.21);
 
-    // Root UI node
+    // Status bars at bottom left
     commands
         .spawn(Node {
             width: Val::Percent(100.0),
             height: Val::Percent(100.0),
             justify_content: JustifyContent::FlexStart,
-            align_items: AlignItems::FlexStart,
+            align_items: AlignItems::FlexEnd,
             padding: UiRect::all(Val::Px(20.0)),
+            position_type: PositionType::Absolute,
             ..default()
         })
         .with_children(|parent| {
-            // Container for status bars
+            // Container for status bars with background
             parent
-                .spawn(Node {
-                    flex_direction: FlexDirection::Column,
-                    row_gap: Val::Px(8.0),
-                    ..default()
-                })
+                .spawn((
+                    Node {
+                        flex_direction: FlexDirection::Column,
+                        row_gap: Val::Px(8.0),
+                        padding: UiRect::all(Val::Px(10.0)),
+                        ..default()
+                    },
+                    BackgroundColor(Color::srgba(0.2, 0.2, 0.2, 0.8)),
+                ))
                 .with_children(|parent| {
                     // Health bar
                     parent
@@ -79,6 +84,16 @@ pub fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                             ..default()
                         })
                         .with_children(|parent| {
+                            // Heart icon
+                            parent.spawn((
+                                ImageNode::new(asset_server.load("base/icons/heart.png")),
+                                Node {
+                                    width: Val::Px(20.0),
+                                    height: Val::Px(20.0),
+                                    ..default()
+                                },
+                            ));
+                            
                             // Bar background
                             parent
                                 .spawn((
@@ -117,6 +132,16 @@ pub fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                             ..default()
                         })
                         .with_children(|parent| {
+                            // Foot icon
+                            parent.spawn((
+                                ImageNode::new(asset_server.load("base/icons/foot.png")),
+                                Node {
+                                    width: Val::Px(20.0),
+                                    height: Val::Px(20.0),
+                                    ..default()
+                                },
+                            ));
+                            
                             // Bar background
                             parent
                                 .spawn((
@@ -145,18 +170,30 @@ pub fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                                     ));
                                 });
                         });
-
-                    // Gold text
-                    parent.spawn((
-                        Text::new("Gold: 0"),
-                        TextFont {
-                            font_size: 16.0,
-                            ..default()
-                        },
-                        TextColor(Color::WHITE),
-                        GoldText,
-                    ));
                 });
+        });
+
+    // Gold text (keeping at top for now)
+    commands
+        .spawn(Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            justify_content: JustifyContent::FlexStart,
+            align_items: AlignItems::FlexStart,
+            padding: UiRect::all(Val::Px(20.0)),
+            position_type: PositionType::Absolute,
+            ..default()
+        })
+        .with_children(|parent| {
+            parent.spawn((
+                Text::new("Gold: 0"),
+                TextFont {
+                    font_size: 16.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                GoldText,
+            ));
         });
 
     // Toolbar icons
@@ -227,6 +264,7 @@ pub fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                                     padding: UiRect::all(Val::Px(4.0)),
                                     justify_content: JustifyContent::Center,
                                     align_items: AlignItems::Center,
+                                    position_type: PositionType::Relative,
                                     ..default()
                                 },
                                 BackgroundColor(Color::srgba(0.2, 0.2, 0.2, 0.8)),
@@ -244,6 +282,23 @@ pub fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                                     Node {
                                         width: Val::Px(48.0),
                                         height: Val::Px(48.0),
+                                        ..default()
+                                    },
+                                ));
+                                
+                                // Numeric label (1-9, 0 for slot 9)
+                                let label_text = if i == 9 { "0" } else { &(i + 1).to_string() };
+                                parent.spawn((
+                                    Text::new(label_text),
+                                    TextFont {
+                                        font_size: 14.0,
+                                        ..default()
+                                    },
+                                    TextColor(Color::WHITE),
+                                    Node {
+                                        position_type: PositionType::Absolute,
+                                        top: Val::Px(2.0),
+                                        left: Val::Px(2.0),
                                         ..default()
                                     },
                                 ));
