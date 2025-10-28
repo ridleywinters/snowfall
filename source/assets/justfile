@@ -13,21 +13,10 @@ build: ensure
 
 [private]
 build-tiny-textures:
-    {{SCRIPTS}}/extract_texture.ts \
-        "{{EXPANDED}}/tiny_textures/pack-3/512x512/Stone/Stone_16-512x512.png" \
-        "{{EXPANDED}}/tiny_textures/attribution.meta.md" \
-        "64x64" "./base/textures/stone_1.png"
-    {{SCRIPTS}}/extract_texture.ts \
-        "{{EXPANDED}}/tiny_textures/pack-3/512x512/Stone/Stone_06-512x512.png" \
-        "{{EXPANDED}}/tiny_textures/attribution.meta.md" \
-        "64x64" "./base/textures/stone_2.png"
+    build/build-tiny-textures.ts
 
 build-content:
-    {{SCRIPTS}}/aseprite_to_png.ts \
-        -i "{{REPO_ROOT}}/source/content/sprites/npc-0001.aseprite" \
-        -o "./base/sprites/npc-0001.png"
-    cp -f "{{REPO_ROOT}}/source/content/sprites/attribution.meta.md" "./base/sprites/npc-0001.meta.md"
-    {{SCRIPTS}}/aseprite_to_png.ts \
-        -i "{{REPO_ROOT}}/source/content/sprites/debug-0001.aseprite" \
-        -o "./base/sprites/debug-0001.png"
-    cp -f "{{REPO_ROOT}}/source/content/sprites/attribution.meta.md" "./base/sprites/debug-0001.meta.md"
+    build/build-content.ts
+
+clean:
+    git clean -fdX ./base
