@@ -1,27 +1,18 @@
 # extern
 
-The `extern` folder is intended for storing assets or content created outside this project. The original assets should be stored here to provide "source of truth" as to the attribution as well as the original, unmodified asset itself.
+The `extern` folder is intended for storing assets or content created outside this project.
 
-The intended workflow is something like this:
+Storing the original, unmodified data in the repo is being done to ensure there is a clear "source of truth" for the attribution as well as unambiguous tracking of any modifications to the original assets.
 
-### Use `source` to store the original assets
+### Asset pipeline
 
-- Copy the original asset to a `source/<package identifier>` folder
-- Add a basic `README.md` to that folder to document the source & attribution info
-- Add a shorter `attribution.meta.md` (more on this below )
+The assets pipeline roughly works as follows:
 
-### Use `expanded` to store the assets in an easy to work with format
+- Original data for external assets is stored in `extern/source/<name of assets>`
+- The `just expand` recipe will:
+  - Decompress, rename, or otherwise move the raw assets into the `expanded` directory
+  - This step occurs to make the assets easier to work with for other scripts
 
-External assets are stored in all sorts of different packaging formats and folder structures. The next step is to provide a short recipe to expand the asset(s) into an easier to work with form that's _more_ normalized.
+The `source/content` directory contains assets created by contributors to this project.
 
-- Add an `expand-` private recipe for the asset(s)
-- Ensure this runs if and only if the asset is not already expanded!
-
-### Use `$REPO_ROOT/assets` to store any _modified_ versions
-
-The `assets` directory is for the "final" in-game assets. This includes assets created by contributors as well as those derived or directly from external asset packages. If external assets are being used, add a recipe to the `justfile` in `assets` to copy the asset from the `extern/expanded` directory to the appropriate fully normalized format in the `assets` directory.
-
-- Add a recipe to `assets/justfile` to copy the external assets to assets
-- Optionally include modifications (format conversion, resizing, etc.) to the recipe
-- Ensure a `.meta.md` attribution file is copied for _every_ asset
-- Ensure the `assets` directory contains fully normalized assets
+The `source/assets` directory contains scripts for building / converting both the external assets and the internal assets to normalize formats usable directly in game. It also ensures all final assets are accompanied by a `<asset name>.meta.md` file containing all licensing and attribution information so that is easily discoverable.

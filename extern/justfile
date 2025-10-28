@@ -4,10 +4,10 @@ default:
 
 # decompress external assets
 expand:
-    test -d "./expanded/tiny_textures" || just expand-worker
+    test -d "./expanded/tiny_textures" || just expand-tiny-textures
 
 [private]
-expand-worker:
+expand-tiny-textures:
     mkdir -p ./expanded/tiny_textures/pack-1
     mkdir -p ./expanded/tiny_textures/pack-2
     mkdir -p ./expanded/tiny_textures/pack-3
