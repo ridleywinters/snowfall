@@ -1,0 +1,60 @@
+#!/usr/bin/env -S deno run --allow-read --allow-write --allow-run --allow-env
+import { sh } from "@raiment-shell";
+
+export async function validateCommitMessage(filename: string) {
+    const message = await Deno.readTextFile(filename);
+
+    const validTypeDescs = {
+        feat: "a new feature or improvement in user experience",
+        fix: "a bug fix",
+        docs: "documentation changes",
+        demo: "update to the demo or example",
+        arch: "refactor or internal architectural improvements",
+        perf: "a code change that improves performance",
+        test: "add or improve tests",
+        build: "changes to the build or deployment system",
+        misc: "escape hatch for anything that does not fit into the above",
+    };
+    const printValidTypes = () => {
+        sh.cprintln("[Valid commit prefixes:](white)");
+        for (const [type, desc] of Object.entries(validTypeDescs)) {
+            sh.cprintln(`  [${type.padStart(5, " ")}](DeepSkyBlue): [${desc}](gray)`);
+        }
+    };
+
+    if (typeof message !== "string") {
+        console.error("Commit message must be a string");
+        Deno.exit(1);
+    }
+
+    const last = await sh.spawn("git", ["log", "-n", "1", "--pretty=%B"]);
+    console.log("Last commit message:", last);
+    const scrub = (s: string) => s.toLocaleLowerCase().replace(/\s/g, "");
+    if (scrub(last) === scrub(message)) {
+        sh.cprintln("[Commit message is the same as the last commit message](red)");
+        sh.cprintln("");
+        Deno.exit(1);
+    }
+
+    const validTypes = Object.keys(validTypeDescs);
+
+    // Split the message into the part before ":" and everything after
+    const parts = message.split(":");
+    if (parts.length === 1) {
+        sh.cprintln("[Commit message must contain a <type>: <message>](red)");
+        sh.cprintln("");
+        printValidTypes();
+        Deno.exit(1);
+    }
+    const [type, _description] = [parts[0], parts.slice(1).join(":")];
+    if (!validTypes.includes(type)) {
+        sh.cprintln(`Invalid commit type: [${type}](red)`);
+        sh.cprintln("");
+        printValidTypes();
+        Deno.exit(1);
+    }
+
+    // All good!
+    Deno.exit(0);
+}
+await validateCommitMessage(Deno.args[0]);

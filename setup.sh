@@ -128,6 +128,22 @@ echo
 unset -f _show_command_info
 
 #==============================================================================
+# git setup
+#==============================================================================
+
+# For each file in $REPO_ROOT/config/git-hooks, link to local hooks.
+#
+# The symbolic link allows the same file to both be active (in the hooks
+# directory outside the repo) and stored in the repo as well.
+for source in $REPO_ROOT/config/git-hooks/*; do
+    hook=$(basename $source)
+    target=$REPO_ROOT/.git/hooks/$hook
+    rm -f $target
+    ln -s $source $target
+    chmod +x $target
+done
+
+#==============================================================================
 # Aliases and tools
 #==============================================================================
 
