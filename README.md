@@ -12,7 +12,7 @@ The game assembles hand-crafted content together with procedural variations to m
 
 Currently the project is just getting started!
 
-![](./media/screenshot-2025-10-28-162934.png)
+![](./media/screenshot-2025-10-29-114358.png)
 
 ## Tech stack
 

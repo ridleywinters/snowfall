@@ -77,11 +77,8 @@ map:
     y: 201.0
     item_type: apple
   - x: 239.0
-    y: 205.0
-    item_type: apple
-  - x: 223.0
-    y: 213.0
-    item_type: apple
-  - x: 239.0
     y: 211.0
     item_type: coin-gold
+  - x: 225.0
+    y: 221.0
+    item_type: apple
