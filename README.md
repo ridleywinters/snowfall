@@ -1,6 +1,6 @@
 # Fallgray
 
-Fallgray is a long-term, hobby project to create an open source, retro-style, single-player fantasy life simulator role playing game. It is set in the fictional fantasy world of Galthea. It draws inspiration from games like Daggerfall and Barony.
+Fallgray is a long-term, hobby project to create an open source, retro-style, single-player fantasy life simulator role playing game. It is set in the fictional fantasy world of Galthea. It draws inspiration from games like Daggerfall, Barony, and The Wayward Realms.
 
 It aims to provide a massive open world, both in game and in lore. While every game should be fun to play, Fallgray also aims to be easy and enjoyable to contribute to. In-game editors and content management should make contributions trivial. Creating mods and even full new "distributions" can be a core part of the experience of Fallgray.
 

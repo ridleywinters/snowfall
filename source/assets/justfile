@@ -15,6 +15,7 @@ _build-imp: ensure
     build/build-tiny-textures.ts
     build/build-content.ts
     build/build-raven-icons.ts
+    build/build-items.ts
 
 rebuild: clean build
 

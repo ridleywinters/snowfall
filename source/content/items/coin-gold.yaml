@@ -1,0 +1,7 @@
+item:
+  id: coin-gold
+  category: money
+  image: base/sprites/coin-gold.png
+  scale: 0.8
+  effects: []
+  script: add_gold 5

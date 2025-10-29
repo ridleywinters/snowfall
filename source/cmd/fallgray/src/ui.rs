@@ -3,15 +3,15 @@ use bevy::prelude::*;
 #[derive(Resource)]
 pub struct PlayerStats {
     pub health: f32,  // 0.0 to 100.0
-    pub fatigue: f32, // 0.0 to 100.0
-    pub gold: u32,
+    pub stamina: f32, // 0.0 to 100.0
+    pub gold: i32,
 }
 
 impl Default for PlayerStats {
     fn default() -> Self {
         Self {
             health: 100.0,
-            fatigue: 50.0,
+            stamina: 50.0,
             gold: 0,
         }
     }
@@ -331,7 +331,7 @@ pub fn update_ui(
 
     // Update fatigue bar width
     if let Ok(mut node) = fatigue_query.single_mut() {
-        node.width = Val::Percent(stats.fatigue);
+        node.width = Val::Percent(stats.stamina);
     }
 
     // Update gold text
@@ -389,7 +389,7 @@ pub fn update_toolbar_input(
     }
 }
 
-pub fn handle_toolbar_click(
+pub fn update_toolbar_click(
     mouse_button: Res<ButtonInput<MouseButton>>,
     mut toolbar: ResMut<Toolbar>,
     slot_query: Query<(&Interaction, &ToolbarSlot)>,

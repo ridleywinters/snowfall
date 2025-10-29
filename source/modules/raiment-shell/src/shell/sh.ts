@@ -1,14 +1,13 @@
+import { copy } from "./copy.ts";
 import { cprintln } from "./cprintln.ts";
 import { exec } from "./exec.ts";
-import { spawn } from "./spawn.ts";
 import { expandEnvVars } from "./expand_env_vars.ts";
 import { glob } from "./glob.ts";
 import { mkdir } from "./mkdir.ts";
+import { read } from "./read.ts";
+import { write } from "./write.ts";
+import { spawn } from "./spawn.ts";
 import { template } from "./template.ts";
-
-async function copy(source: string, destination: string): Promise<void> {
-    return await Deno.copyFile(source, destination);
-}
 
 export const sh = {
     // String utilities
@@ -25,6 +24,8 @@ export const sh = {
 
     // Filesystem
     mkdir,
+    write,
     glob,
     copy,
+    read,
 };

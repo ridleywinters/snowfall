@@ -6,8 +6,10 @@
     "jsr:@std/fs@1.0.19": "1.0.19",
     "jsr:@std/internal@^1.0.10": "1.0.12",
     "jsr:@std/internal@^1.0.9": "1.0.12",
+    "jsr:@std/path@*": "1.1.2",
     "jsr:@std/path@1.0.8": "1.0.8",
     "jsr:@std/path@^1.1.1": "1.1.2",
+    "jsr:@std/yaml@^1.0.10": "1.0.10",
     "npm:@types/node@*": "24.2.0",
     "npm:sharp@~0.34.4": "0.34.4"
   },
@@ -36,6 +38,9 @@
       "dependencies": [
         "jsr:@std/internal@^1.0.10"
       ]
+    },
+    "@std/yaml@1.0.10": {
+      "integrity": "245706ea3511cc50c8c6d00339c23ea2ffa27bd2c7ea5445338f8feff31fa58e"
     }
   },
   "npm": {
@@ -246,6 +251,7 @@
       "jsr:@std/fmt@1.0.3",
       "jsr:@std/fs@1.0.19",
       "jsr:@std/path@1.0.8",
+      "jsr:@std/yaml@^1.0.10",
       "npm:sharp@~0.34.4"
     ]
   }

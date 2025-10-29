@@ -1,0 +1,7 @@
+item:
+  id: apple
+  category: food
+  image: base/sprites/apple-01.png
+  scale: 1.2
+  effects: []
+  script: add_stamina 10

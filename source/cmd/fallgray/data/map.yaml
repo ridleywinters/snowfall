@@ -66,7 +66,22 @@ map:
   apples:
   - x: -788.0
     y: 444.0
+    item_type: apple
   - x: 196.0
     y: 124.0
+    item_type: apple
   - x: 68.0
     y: 108.0
+    item_type: apple
+  - x: 237.0
+    y: 201.0
+    item_type: apple
+  - x: 239.0
+    y: 205.0
+    item_type: apple
+  - x: 223.0
+    y: 213.0
+    item_type: apple
+  - x: 239.0
+    y: 211.0
+    item_type: coin-gold

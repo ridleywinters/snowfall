@@ -6,11 +6,19 @@
         "@std/fmt": "jsr:@std/fmt@1.0.3",
         "@raiment-core": "../../modules/raiment-core/mod.ts",
         "@raiment-shell": "../../modules/raiment-shell/mod.ts",
+        "@std/yaml": "jsr:@std/yaml@^1.0.10",
         "sharp": "npm:sharp@^0.34.4"
     },
     "fmt": {
         "useTabs": false,
         "indentWidth": 4,
         "lineWidth": 100
+    },
+    "compilerOptions": {
+        "strict": true,
+        "lib": [
+            "deno.window",
+            "esnext"
+        ]
     }
 }

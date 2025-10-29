@@ -1,5 +1,5 @@
 ensure:
-
+    @cd ${REPO_ROOT}/source/assets && just build
 
 build: ensure
     cargo build --release

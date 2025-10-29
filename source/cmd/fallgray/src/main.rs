@@ -12,6 +12,24 @@ use ui::*;
 const PLAYER_LIGHT_OFFSET_1: [f32; 3] = [0.0, 1.5, 4.0];
 const PLAYER_LIGHT_OFFSET_2: [f32; 3] = [0.5, -0.5, 4.0];
 
+#[derive(Serialize, Deserialize)]
+pub struct ItemDefinition {
+    pub image: String,
+    pub script: String,
+    pub scale: f32,
+    pub effects: Vec<String>,
+}
+
+#[derive(Deserialize)]
+struct ItemDefinitionsFile {
+    items: HashMap<String, ItemDefinition>,
+}
+
+#[derive(Resource)]
+struct ItemDefinitions {
+    items: HashMap<String, ItemDefinition>,
+}
+
 #[derive(Deserialize, Serialize)]
 struct MapFile {
     map: MapData,
@@ -28,20 +46,37 @@ struct MapData {
 struct ApplePosition {
     x: f32,
     y: f32,
+    #[serde(default = "default_item_type")]
+    item_type: String,
+}
+
+fn default_item_type() -> String {
+    "apple".to_string()
 }
 
 #[derive(Resource)]
-struct AppleTracker {
-    positions: HashSet<(i32, i32)>,   // Grid positions where apples exist
-    world_positions: Vec<(f32, f32)>, // Actual world positions for saving
+struct ItemTracker {
+    positions: HashSet<(i32, i32)>, // Grid positions where apples exist
+    world_positions: Vec<(f32, f32, String)>, // Actual world positions and item types for saving
 }
 
-impl Default for AppleTracker {
+impl Default for ItemTracker {
     fn default() -> Self {
         Self {
             positions: HashSet::new(),
             world_positions: Vec::new(),
         }
+    }
+}
+
+impl ItemTracker {
+    fn remove_at_position(&mut self, world_x: f32, world_y: f32) {
+        let grid_x = (world_x / 8.0).floor() as i32;
+        let grid_y = (world_y / 8.0).floor() as i32;
+        self.positions.remove(&(grid_x, grid_y));
+        self.world_positions.retain(|(x, y, _)| {
+            (*x - world_x).abs() > 0.1 || (*y - world_y).abs() > 0.1
+        });
     }
 }
 
@@ -82,11 +117,11 @@ fn main() {
                 update_player_light_animation,
                 update_ui,
                 update_toolbar_input,
-                handle_toolbar_click,
+                update_toolbar_click,
                 update_billboards,
                 update_spawn_apple_on_click,
                 update_save_map_on_input,
-                update_check_apple_collision,
+                update_check_item_collision,
             ),
         )
         .run();
@@ -108,7 +143,7 @@ struct PlayerLight2;
 struct Billboard;
 
 #[derive(Component)]
-struct Apple {
+struct Item {
     interaction_radius: f32,
 }
 
@@ -204,6 +239,18 @@ fn startup_system(
     let map_file: MapFile = serde_yaml::from_str(&map_yaml).expect("Failed to parse map.yaml");
     let lines = map_file.map.grid;
 
+    // Load item definitions from data/item_definitions.yaml
+    let filename = std::env::var("REPO_ROOT")
+        .map(|repo_root| format!("{}/source/assets/base/items/items.yaml", repo_root))
+        .unwrap_or_else(|_| "data/item_definitions.yaml".to_string());
+    let item_defs_yaml =
+        std::fs::read_to_string(&filename).expect(&format!("Failed to read {}", filename));
+    let item_defs_file: ItemDefinitionsFile =
+        serde_yaml::from_str(&item_defs_yaml).expect(&format!("Failed to parse {}", filename));
+    let item_definitions = ItemDefinitions {
+        items: item_defs_file.items,
+    };
+
     // Build collision map
     let height = lines.len();
     let width = lines.iter().map(|l| l.len()).max().unwrap_or(0);
@@ -273,8 +320,7 @@ fn startup_system(
     commands.insert_resource(CollisionMap::new(collision_grid, width, height));
 
     // Initialize apple tracker and spawn existing apples
-    let mut apple_tracker = AppleTracker::default();
-    let scale = 1.2;
+    let mut apple_tracker = ItemTracker::default();
 
     for apple_pos in &map_file.map.apples {
         // Track the apple position
@@ -283,21 +329,34 @@ fn startup_system(
         apple_tracker.positions.insert((grid_x, grid_y));
         apple_tracker
             .world_positions
-            .push((apple_pos.x, apple_pos.y));
+            .push((apple_pos.x, apple_pos.y, apple_pos.item_type.clone()));
 
-        // Spawn the apple billboard
+        // Get scale from item definition for positioning
+        let apple_def = item_definitions
+            .items
+            .get(&apple_pos.item_type)
+            .expect(&format!(
+                "Item definition not found: {}",
+                apple_pos.item_type
+            ));
+        let scale = apple_def.scale;
+
+        // Spawn the item billboard
         spawn_apple_sprite(
             &mut commands,
             &mut meshes,
             &mut materials,
             &asset_server,
+            &item_definitions.items,
             Vec3::new(apple_pos.x, apple_pos.y, scale),
-            scale,
-            "base/sprites/apple-01.png",
+            &apple_pos.item_type,
         );
     }
 
     commands.insert_resource(apple_tracker);
+
+    // Insert item definitions as a resource
+    commands.insert_resource(item_definitions);
 
     commands.insert_resource(bevy::light::AmbientLight {
         color: Color::WHITE,
@@ -681,12 +740,16 @@ fn spawn_apple_sprite(
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
     asset_server: &Res<AssetServer>,
+    item_definitions: &HashMap<String, ItemDefinition>,
     position: Vec3,
-    scale: f32,
-    sprite_path: &str,
+    item_key: &str,
 ) {
+    let item_def = item_definitions
+        .get(item_key)
+        .unwrap_or_else(|| panic!("Item definition not found: {}", item_key));
+
     let sprite_material = materials.add(StandardMaterial {
-        base_color_texture: Some(load_image_texture(asset_server, sprite_path)),
+        base_color_texture: Some(load_image_texture(asset_server, &item_def.image)),
         base_color: Color::WHITE,
         alpha_mode: bevy::render::alpha::AlphaMode::Blend,
         unlit: false,
@@ -696,6 +759,8 @@ fn spawn_apple_sprite(
 
     use bevy::asset::RenderAssetUsages;
     use bevy::mesh::{Indices, PrimitiveTopology};
+
+    let scale = item_def.scale;
 
     let mut billboard_mesh = Mesh::new(
         PrimitiveTopology::TriangleList,
@@ -721,7 +786,7 @@ fn spawn_apple_sprite(
         MeshMaterial3d(sprite_material),
         Transform::from_translation(position),
         Billboard,
-        Apple {
+        Item {
             interaction_radius: 2.0,
         },
     ));
@@ -737,8 +802,9 @@ fn update_spawn_apple_on_click(
     camera_query: Query<(&Camera, &GlobalTransform), With<Camera3d>>,
     ground_query: Query<&GlobalTransform, With<GroundPlane>>,
     ui_interaction_query: Query<&Interaction>,
-    mut apple_tracker: ResMut<AppleTracker>,
+    mut apple_tracker: ResMut<ItemTracker>,
     toolbar: Res<Toolbar>,
+    item_definitions: Res<ItemDefinitions>,
 ) {
     if !mouse_button.just_pressed(MouseButton::Left) {
         return;
@@ -805,31 +871,39 @@ fn update_spawn_apple_on_click(
     let world_x = grid_x as f32 * 2.0 + 1.0;
     let world_y = grid_y as f32 * 2.0 + 1.0;
 
-    // Track the apple
-    apple_tracker.positions.insert((grid_x, grid_y));
-    apple_tracker.world_positions.push((world_x, world_y));
-
-    // Select sprite based on active toolbar slot
-    let sprite_path = match toolbar.active_slot {
-        0 => "base/sprites/apple-01.png",
-        1 => "base/sprites/coin-gold.png",
-        _ => "base/sprites/apple-01.png",
+    // Select item based on active toolbar slot
+    let item_key = match toolbar.active_slot {
+        0 => "apple",
+        1 => "coin-gold",
+        _ => "apple",
     };
 
-    // Spawn apple billboard at the intersection point
-    let scale = 1.2;
+    // Track the item
+    apple_tracker.positions.insert((grid_x, grid_y));
+    apple_tracker
+        .world_positions
+        .push((world_x, world_y, item_key.to_string()));
+
+    // Get scale from item definition for positioning
+    let item_def = item_definitions
+        .items
+        .get(item_key)
+        .expect("Item definition not found");
+    let scale = item_def.scale;
+
+    // Spawn item billboard at the intersection point
     spawn_apple_sprite(
         &mut commands,
         &mut meshes,
         &mut materials,
         &asset_server,
+        &item_definitions.items,
         Vec3::new(world_x, world_y, scale),
-        scale,
-        sprite_path,
+        item_key,
     );
 }
 
-fn update_save_map_on_input(input: Res<ButtonInput<KeyCode>>, apple_tracker: Res<AppleTracker>) {
+fn update_save_map_on_input(input: Res<ButtonInput<KeyCode>>, apple_tracker: Res<ItemTracker>) {
     // Press Ctrl+S to save the map
     if (input.pressed(KeyCode::ControlLeft) || input.pressed(KeyCode::ControlRight))
         && input.just_pressed(KeyCode::KeyS)
@@ -855,7 +929,11 @@ fn update_save_map_on_input(input: Res<ButtonInput<KeyCode>>, apple_tracker: Res
         map_file.map.apples = apple_tracker
             .world_positions
             .iter()
-            .map(|(x, y)| ApplePosition { x: *x, y: *y })
+            .map(|(x, y, item_type)| ApplePosition {
+                x: *x,
+                y: *y,
+                item_type: item_type.clone(),
+            })
             .collect();
 
         // Serialize and save
@@ -878,12 +956,13 @@ fn update_save_map_on_input(input: Res<ButtonInput<KeyCode>>, apple_tracker: Res
     }
 }
 
-fn update_check_apple_collision(
+fn update_check_item_collision(
     mut commands: Commands,
     player_query: Query<&Transform, With<Player>>,
-    apple_query: Query<(Entity, &Transform, &Apple)>,
+    item_query: Query<(Entity, &Transform, &Item)>,
     mut stats: ResMut<PlayerStats>,
-    mut apple_tracker: ResMut<AppleTracker>,
+    mut item_tracker: ResMut<ItemTracker>,
+    item_definitions: Res<ItemDefinitions>,
 ) {
     let Ok(player_transform) = player_query.single() else {
         return;
@@ -891,25 +970,79 @@ fn update_check_apple_collision(
 
     let player_pos = player_transform.translation;
 
-    for (entity, apple_transform, apple) in apple_query.iter() {
-        let apple_pos = apple_transform.translation;
+    for (entity, item_transform, apple) in item_query.iter() {
+        let item_pos = item_transform.translation;
 
-        if check_circle_collision(player_pos, apple_pos, apple.interaction_radius) {
-            // Increase fatigue by 10
-            stats.fatigue = (stats.fatigue + 10.0).min(100.0);
+        if check_circle_collision(player_pos, item_pos, apple.interaction_radius) {
+            // Find the item type from the tracker
+            let item_type = item_tracker
+                .world_positions
+                .iter()
+                .find(|(x, y, _)| (*x - item_pos.x).abs() < 0.1 && (*y - item_pos.y).abs() < 0.1)
+                .map(|(_, _, item_type)| item_type.as_str())
+                .unwrap_or("apple");
 
-            // Remove apple from world
+            // Get the item definition and print the script
+            if let Some(item_def) = item_definitions.items.get(item_type) {
+                println!("Item script: {}", item_def.script);
+                process_script(&item_def.script, &mut stats);
+            }
+
+            // Remove item from world
             commands.entity(entity).despawn();
 
             // Remove from tracker
-            let grid_x = (apple_pos.x / 8.0).floor() as i32;
-            let grid_y = (apple_pos.y / 8.0).floor() as i32;
-            apple_tracker.positions.remove(&(grid_x, grid_y));
-            apple_tracker
-                .world_positions
-                .retain(|(x, y)| (*x - apple_pos.x).abs() > 0.1 || (*y - apple_pos.y).abs() > 0.1);
+            item_tracker.remove_at_position(item_pos.x, item_pos.y);
 
-            println!("Collected apple! Fatigue: {}", stats.fatigue);
+            println!("Collected item! Fatigue: {}", stats.stamina);
+        }
+    }
+}
+
+fn process_script(script: &str, stats: &mut ResMut<PlayerStats>) {
+    for line in script.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        // Skip comment lines
+        if trimmed.starts_with('#') || trimmed.starts_with("//") {
+            continue;
+        }
+
+        let words: Vec<&str> = trimmed.split_whitespace().collect();
+        if words.is_empty() {
+            continue;
+        }
+
+        match words[0] {
+            "add_gold" => {
+                if words.len() >= 2 {
+                    if let Ok(amount) = words[1].parse::<i32>() {
+                        stats.gold += amount;
+                        println!("Added {} gold, new value: {}", amount, stats.gold);
+                    } else {
+                        eprintln!("Invalid gold amount: {}", words[1]);
+                    }
+                } else {
+                    eprintln!("add_gold requires an amount");
+                }
+            }
+            "add_stamina" => {
+                if words.len() >= 2 {
+                    if let Ok(amount) = words[1].parse::<f32>() {
+                        stats.stamina = (stats.stamina + amount).min(100.0);
+                        println!("Added {} stamina, new value: {}", amount, stats.stamina);
+                    } else {
+                        eprintln!("Invalid stamina amount: {}", words[1]);
+                    }
+                } else {
+                    eprintln!("add_stamina requires an amount");
+                }
+            }
+            _ => {
+                eprintln!("Unknown command: {}", words.join(" "));
+            }
         }
     }
 }

@@ -1,0 +1,16 @@
+{
+  "version": "5",
+  "specifiers": {
+    "jsr:@std/yaml@^1.0.10": "1.0.10"
+  },
+  "jsr": {
+    "@std/yaml@1.0.10": {
+      "integrity": "245706ea3511cc50c8c6d00339c23ea2ffa27bd2c7ea5445338f8feff31fa58e"
+    }
+  },
+  "workspace": {
+    "dependencies": [
+      "jsr:@std/yaml@^1.0.10"
+    ]
+  }
+}
