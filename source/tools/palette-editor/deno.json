@@ -1,0 +1,42 @@
+{
+    "imports": {
+        "@/": "./src/",
+        "react": "npm:react@^19.2.0",
+        "react-dom": "npm:react-dom@^19.2.0"
+    },
+    "compilerOptions": {
+        "jsx": "react-jsx",
+        "jsxImportSource": "react",
+        "types": [
+            "npm:@types/react@19",
+            "npm:@types/react-dom@19"
+        ],
+        "strict": true,
+        "lib": [
+            "deno.ns",
+            "dom",
+            "dom.iterable",
+            "esnext",
+            "deno.unstable"
+        ]
+    },
+    "fmt": {
+        "useTabs": false,
+        "indentWidth": 4,
+        "lineWidth": 100
+    },
+    "lint": {
+        "plugins": [],
+        "rules": {
+            "tags": [
+                "recommended"
+            ],
+            "exclude": [
+                "require-await",
+                "require-yield",
+                "no-explicit-any",
+                "no-unused-vars"
+            ]
+        }
+    }
+}
