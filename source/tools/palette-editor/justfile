@@ -1,0 +1,40 @@
+import "../../common/common.justfile"
+
+ensure:
+    @just ensure-vscode-directory
+
+build: ensure build-only
+
+[private]
+build-only:
+    mkdir -p dist
+    cp -f src/dist/* dist/
+    deno bundle \
+      --unstable-raw-imports \
+      --platform=browser \
+      --sourcemap=inline \
+      --output dist/main.bundle.js \
+      src/main.tsx
+    sleep 1
+    touch dist/build.sentinel
+
+dev-client:
+    watchexec \
+        --watch src \
+        --exts ts,tsx,html,css,png,yaml,json \
+        "just build-only && sleep 1"
+dev-server: run-server
+
+
+dev: ensure
+    mprocs \
+        --proc-list-title "palette-editor 9000" \
+        --names "client,server" \
+        "just dev-client" \
+        "just dev-server"
+
+
+run-server:
+    deno run -A jsr:@bbcwqx/live-server \
+        --port=9000 \
+        ./dist 
