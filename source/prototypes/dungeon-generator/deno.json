@@ -1,6 +1,7 @@
 {
     "imports": {
         "@/": "./src/",
+        "@raiment-core": "../../modules/raiment-core/mod.ts",
         "react": "npm:react@^19.2.0",
         "react-dom": "npm:react-dom@^19.2.0"
     },

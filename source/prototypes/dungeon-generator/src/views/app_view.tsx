@@ -1,3 +1,4 @@
+import { RNG } from "@raiment-core";
 import React, { JSX } from "react";
 
 // 8x8 grid
@@ -162,16 +163,9 @@ class Cell {
     }
 }
 
-function selectRnd<T>(arr: T[]): T {
-    for (let i = 0; i < arr.length; i++) {
-        Math.random();
-    }
-    const index = Math.floor(Math.random() * arr.length);
-    return arr[index];
-}
-
 class Database {
     cells: Record<string, Cell> = {};
+    rng = RNG.makeRandom();
 
     add(cell: Cell) {
         this.cells[cell.hash()] = cell;
@@ -191,7 +185,7 @@ class Database {
 
     selectRandom(): Cell {
         const keys = Object.keys(this.cells);
-        const key = selectRnd(keys);
+        const key = this.rng.select(keys);
         return this.cells[key];
     }
 
@@ -199,7 +193,7 @@ class Database {
         const orderedKeys = Object.keys(this.cells);
         const keys = [];
         while (orderedKeys.length > 0) {
-            const index = selectRnd(orderedKeys.map((_, i) => i));
+            const index = this.rng.select(orderedKeys.map((_, i) => i));
             keys.push(orderedKeys.splice(index, 1)[0]);
         }
         for (const key of keys) {
@@ -468,12 +462,8 @@ class DungeonMap {
     }
 }
 
-function selectRandom<T>(array: T[]): T {
-    const index = Math.floor(Math.random() * array.length);
-    return array[index];
-}
-
 function build() {
+    const rng = RNG.makeRandom();
     const database = generateCells();
 
     const map = new DungeonMap();
@@ -490,7 +480,7 @@ function build() {
             console.log("No open directions, stopping", i);
             break;
         }
-        const dir = selectRandom(directions);
+        const dir = rng.select(directions);
         let nextCell = database.select((next) => {
             if (next.exits().length <= 1) {
                 return false;
