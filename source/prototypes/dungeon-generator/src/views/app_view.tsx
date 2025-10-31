@@ -460,6 +460,12 @@ class DungeonMap {
 
         return true;
     }
+
+    buildFittingCell(p: Pos): Cell {
+        const cell = new Cell();
+        cell.draw((x, y) => 1);
+        return cell;
+    }
 }
 
 function selectRandom<T>(array: T[]): T {
@@ -477,8 +483,7 @@ function build() {
     map.set(startLoc.x, startLoc.y, startCell);
 
     let loc = startLoc;
-    let cell = startCell;
-    for (let i = 0; i < 32; i++) {
+    for (let i = 0; i < 64; i++) {
         console.log("STEP", i);
         const directions = map.openDirections(loc);
         if (directions.length === 0) {
@@ -486,12 +491,15 @@ function build() {
             break;
         }
         const dir = selectRandom(directions);
-        const nextCell = database.select((next) => {
+        let nextCell = database.select((next) => {
             if (next.exits().length <= 1) {
                 return false;
             }
             return map.fits(next, addPos(loc, dir));
         })?.clone();
+        if (!nextCell) {
+            nextCell = map.buildFittingCell(addPos(loc, dir));
+        }
         if (!nextCell) {
             console.log(`No fitting cell found, stopping (${dir}), ${i}`);
             break;
@@ -501,7 +509,19 @@ function build() {
         const nextLoc = addPos(loc, dir);
         map.set(nextLoc.x, nextLoc.y, nextCell);
         loc = nextLoc;
-        cell = nextCell;
+    }
+
+    for (const key of map.grid.keys()) {
+        const pos = key.split(",").map((v) => parseInt(v, 10));
+        const directions = map.openDirections({ x: pos[0], y: pos[1] });
+        if (directions.length === 0) {
+            continue;
+        }
+        for (const dir of directions) {
+            const nextLoc = addPos({ x: pos[0], y: pos[1] }, dir);
+            const cell = map.buildFittingCell(nextLoc);
+            map.set(nextLoc.x, nextLoc.y, cell);
+        }
     }
 
     return map;

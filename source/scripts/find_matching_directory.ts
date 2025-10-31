@@ -52,6 +52,7 @@ async function main(args: string[]): Promise<void> {
         candidates.push(...(await readDirectories(`${repoRoot}/source/crates`)));
         candidates.push(...(await readDirectories(`${repoRoot}/source/modules`)));
         candidates.push(...(await readDirectories(`${repoRoot}/source/tools`)));
+        candidates.push(...(await readDirectories(`${repoRoot}/source/prototypes`)));
         candidates.push(...(await readDirectories(`${repoRoot}/source`)));
         result = findClosestMatch(searchTerm, candidates);
     }
