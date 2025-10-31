@@ -1,7 +1,7 @@
 #!/usr/bin/env -S deno run --allow-read --allow-write --allow-run --allow-env
 
-import { basename, dirname, relative } from "@std/path";
 import { sh } from "@raiment-shell";
+import { basename, dirname, relative } from "@std/path";
 
 const SCRIPTS = sh.template("$REPO_ROOT/source/assets/build");
 const CONTENT_DIR = sh.template("$REPO_ROOT/source/content/sprites");
@@ -18,7 +18,7 @@ async function main(): Promise<void> {
     await sh.mkdir(OUTPUT_DIR);
 
     const files = await sh.glob(`${CONTENT_DIR}/*.aseprite`);
-    const tasks: AssetTask[] = files.map((file) => {
+    const tasks: AssetTask[] = files.map((file: string) => {
         const baseName = basename(file, ".aseprite");
         return {
             sourceImage: file,
@@ -33,7 +33,9 @@ async function main(): Promise<void> {
         await sh.exec(script, ["-i", task.sourceImage, "-o", task.outputImage]);
         await Deno.copyFile(task.sourceMeta, task.outputMeta);
         sh.cprintln(
-            `[:check:](green) built sprite [${relative(".", task.outputImage)}](goldenrod)`,
+            `[:check:](green) built sprite [${
+                relative(".", task.outputImage)
+            }](goldenrod)`,
         );
     }
 }

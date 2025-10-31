@@ -1,13 +1,9 @@
 import { RNG } from "@raiment-core";
 import React, { JSX } from "react";
 
-// 8x8 grid
-// can be rotated any of 4 orientations or mirrored
-// stored with hash to identify unique shapes
+type Direction = "Y+" | "Y-" | "X+" | "X-";
 
-type direction = "Y+" | "Y-" | "X+" | "X-";
-
-function addPos(p: Pos, dir: direction): Pos {
+function addPos(p: Pos, dir: Direction): Pos {
     switch (dir) {
         case "Y+":
             return { x: p.x, y: p.y + 1 };
@@ -25,18 +21,10 @@ type Pos = {
     y: number;
 };
 
-class Cell {
-    map = new Array(8 * 8).fill(0);
+const CELL_SIZE = 16;
 
-    static from(lines: string[]): Cell {
-        const cell = new Cell();
-        for (let y = 0; y < 8; y++) {
-            for (let x = 0; x < 8; x++) {
-                cell.set(x, y, lines[y][x] === "#" ? 1 : 0);
-            }
-        }
-        return cell;
-    }
+class Cell {
+    map = new Array(CELL_SIZE * CELL_SIZE).fill(0);
 
     clone(): Cell {
         const cell = new Cell();
@@ -49,19 +37,19 @@ class Cell {
     }
 
     set(x: number, y: number, value: number) {
-        this.map[y * 8 + x] = value;
+        this.map[y * CELL_SIZE + x] = value;
     }
 
     get(x: number, y: number): number {
-        return this.map[y * 8 + x];
+        return this.map[y * CELL_SIZE + x];
     }
 
     data(): number[][] {
         const data: number[][] = [];
-        for (let y = 0; y < 8; y++) {
+        for (let y = 0; y < CELL_SIZE; y++) {
             const row: number[] = [];
-            for (let x = 0; x < 8; x++) {
-                row.push(this.map[y * 8 + x]);
+            for (let x = 0; x < CELL_SIZE; x++) {
+                row.push(this.map[y * CELL_SIZE + x]);
             }
             data.push(row);
         }
@@ -70,10 +58,10 @@ class Cell {
 
     exits(): { x: number; y: number }[] {
         const exits: { x: number; y: number }[] = [];
-        for (let y = 0; y < 8; y++) {
-            for (let x = 0; x < 8; x++) {
+        for (let y = 0; y < CELL_SIZE; y++) {
+            for (let x = 0; x < CELL_SIZE; x++) {
                 if (this.get(x, y) === 0) {
-                    if (x === 0 || y === 0 || x === 7 || y === 7) {
+                    if (x === 0 || y === 0 || x === CELL_SIZE - 1 || y === CELL_SIZE - 1) {
                         exits.push({ x, y });
                     }
                 }
@@ -82,21 +70,21 @@ class Cell {
         return exits;
     }
 
-    alignsToExits(that: Cell, dir: direction): boolean {
+    alignsToExits(that: Cell, dir: Direction): boolean {
         const exits = that.exits().filter((exit) => {
-            return (dir === "Y+" && exit.y === 7) ||
+            return (dir === "Y+" && exit.y === CELL_SIZE - 1) ||
                 (dir === "Y-" && exit.y === 0) ||
-                (dir === "X+" && exit.x === 7) ||
+                (dir === "X+" && exit.x === CELL_SIZE - 1) ||
                 (dir === "X-" && exit.x === 0);
         });
         for (const exit of exits) {
             const entrance = dir == "Y+"
                 ? { x: exit.x, y: 0 }
                 : dir == "Y-"
-                ? { x: exit.x, y: 7 }
+                ? { x: exit.x, y: CELL_SIZE - 1 }
                 : dir == "X+"
                 ? { x: 0, y: exit.y }
-                : { x: 7, y: exit.y };
+                : { x: CELL_SIZE - 1, y: exit.y };
 
             if (this.get(entrance.x, entrance.y) !== 0) {
                 return false;
@@ -106,18 +94,18 @@ class Cell {
     }
 
     draw(fn: (x: number, y: number) => number) {
-        for (let y = 0; y < 8; y++) {
-            for (let x = 0; x < 8; x++) {
-                this.map[y * 8 + x] = fn(x, y);
+        for (let y = 0; y < CELL_SIZE; y++) {
+            for (let x = 0; x < CELL_SIZE; x++) {
+                this.map[y * CELL_SIZE + x] = fn(x, y);
             }
         }
     }
 
     mirrorX(): Cell {
-        const map = new Array(8 * 8).fill(0);
-        for (let y = 0; y < 8; y++) {
-            for (let x = 0; x < 8; x++) {
-                map[y * 8 + x] = this.map[y * 8 + (7 - x)];
+        const map = new Array(CELL_SIZE * CELL_SIZE).fill(0);
+        for (let y = 0; y < CELL_SIZE; y++) {
+            for (let x = 0; x < CELL_SIZE; x++) {
+                map[y * CELL_SIZE + x] = this.map[y * CELL_SIZE + (CELL_SIZE - 1 - x)];
             }
         }
         this.map = map;
@@ -125,10 +113,10 @@ class Cell {
     }
 
     mirrorY(): Cell {
-        const map = new Array(8 * 8).fill(0);
-        for (let y = 0; y < 8; y++) {
-            for (let x = 0; x < 8; x++) {
-                map[y * 8 + x] = this.map[(7 - y) * 8 + x];
+        const map = new Array(CELL_SIZE * CELL_SIZE).fill(0);
+        for (let y = 0; y < CELL_SIZE; y++) {
+            for (let x = 0; x < CELL_SIZE; x++) {
+                map[y * CELL_SIZE + x] = this.map[(CELL_SIZE - 1 - y) * CELL_SIZE + x];
             }
         }
         this.map = map;
@@ -138,10 +126,10 @@ class Cell {
         n = n % 4;
         let map = this.map;
         for (let i = 0; i < n; i++) {
-            const newMap = new Array(8 * 8).fill(0);
-            for (let y = 0; y < 8; y++) {
-                for (let x = 0; x < 8; x++) {
-                    newMap[x * 8 + (7 - y)] = map[y * 8 + x];
+            const newMap = new Array(CELL_SIZE * CELL_SIZE).fill(0);
+            for (let y = 0; y < CELL_SIZE; y++) {
+                for (let x = 0; x < CELL_SIZE; x++) {
+                    newMap[x * CELL_SIZE + (CELL_SIZE - 1 - y)] = map[y * CELL_SIZE + x];
                 }
             }
             map = newMap;
@@ -152,10 +140,10 @@ class Cell {
 
     display() {
         let text = "";
-        for (let y = 0; y < 8; y++) {
+        for (let y = 0; y < CELL_SIZE; y++) {
             let row = "";
-            for (let x = 0; x < 8; x++) {
-                row += this.map[y * 8 + x] ? "#" : ".";
+            for (let x = 0; x < CELL_SIZE; x++) {
+                row += this.map[y * CELL_SIZE + x] ? "#" : ".";
             }
             text += row + "\n";
         }
@@ -206,100 +194,75 @@ class Database {
     }
 }
 
-function generateCells() {
+async function loadImage(src: string): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = (err) => reject(err);
+        img.src = src;
+    });
+}
+
+async function extractCellData(image: HTMLImageElement): Promise<Cell[]> {
+    const canvas = document.createElement("canvas");
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+        throw new Error("Failed to get canvas context");
+    }
+    ctx.drawImage(image, 0, 0);
+    const cellData: number[][] = [];
+    const cellsX = Math.floor(image.width / CELL_SIZE);
+    const cellsY = Math.floor(image.height / CELL_SIZE);
+
+    const cells = new Array<Cell>();
+    for (let cy = 0; cy < cellsY; cy++) {
+        for (let cx = 0; cx < cellsX; cx++) {
+            const cell = new Cell();
+            let transparent = true;
+            for (let y = 0; y < CELL_SIZE; y++) {
+                for (let x = 0; x < CELL_SIZE; x++) {
+                    const pixelData = ctx.getImageData(
+                        cx * CELL_SIZE + x,
+                        cy * CELL_SIZE + y,
+                        1,
+                        1,
+                    ).data;
+                    if (pixelData[3] !== 0) {
+                        transparent = false;
+                    }
+                    // Assuming black pixels are walls
+                    const isWall = pixelData[0] === 0 && pixelData[1] === 0 && pixelData[2] === 0;
+                    cell.set(x, y, isWall ? 1 : 0);
+                }
+            }
+            if (!transparent) {
+                cells.push(cell);
+            }
+        }
+    }
+
+    return cells;
+}
+
+async function generateCellsFromPNG(database: Database): Promise<void> {
+    console.log("Generating cells from PNG...");
+
+    // Load the PNG image and extract the cell data
+    const image = await loadImage("/tiles-map-16x16.png");
+    const cells = await extractCellData(image);
+
+    // Create cells from the extracted data
+    for (const cell of cells) {
+        database.addPermutations(cell);
+    }
+}
+
+async function generateCells() {
     console.log("Generating cells...");
     const database = new Database();
-
-    for (let i = 1; i < 7; i++) {
-        const cell = new Cell();
-        cell.draw((x, y) => {
-            if (x === 0 || y === 0 || x === 7 || y === 7) {
-                return 1;
-            }
-            return 0;
-        });
-        cell.set(i, 0, 0);
-        database.addPermutations(cell);
-    }
-
-    for (let i = 1; i < 7; i++) {
-        const cell = new Cell();
-        cell.draw((x, y) => {
-            if (x === 0 || y === 0 || x === 7 || y === 7) {
-                return 1;
-            }
-            return 0;
-        });
-        cell.set(i, 0, 0);
-        cell.set(i, 7, 0);
-        database.addPermutations(cell);
-    }
-    for (let i = 1; i < 7; i++) {
-        const cell = new Cell();
-        cell.draw((x, y) => {
-            if (x === 0 || y === 0 || x === 7 || y === 7) {
-                return 1;
-            }
-            return 0;
-        });
-        cell.set(i, 0, 0);
-        cell.set(0, i, 0);
-        database.addPermutations(cell);
-    }
-
-    for (let i = 1; i < 7; i++) {
-        const cell = new Cell();
-        cell.draw((x, y) => {
-            if (y === i) {
-                return 0;
-            }
-            return 1;
-        });
-        database.addPermutations(cell);
-    }
-
-    database.addPermutations(Cell.from([
-        "####.###",
-        "#......#",
-        "#.####.#",
-        ".....#.#",
-        "#....#.#",
-        "#.####.#",
-        "#......#",
-        "########",
-    ]));
-    database.addPermutations(Cell.from([
-        "########",
-        "########",
-        "#..##..#",
-        "....#...",
-        "#.#....#",
-        "#.####.#",
-        "#......#",
-        "########",
-    ]));
-    database.addPermutations(Cell.from([
-        "###.####",
-        "###.####",
-        "###...##",
-        "#####.##",
-        "#####.##",
-        "#####.##",
-        "......##",
-        "########",
-    ]));
-
-    database.addPermutations(Cell.from([
-        "###.####",
-        "###.####",
-        "........",
-        "........",
-        "#####.##",
-        "#####.##",
-        "#.....##",
-        "########",
-    ]));
-
+    await generateCellsFromPNG(database);
     return database;
 }
 
@@ -321,12 +284,25 @@ class DungeonMap {
             const [xStr, yStr] = key.split(",");
             const x = parseInt(xStr, 10);
             const y = parseInt(yStr, 10);
-            if (x < minX) minX = x;
-            if (x > maxX) maxX = x;
-            if (y < minY) minY = y;
-            if (y > maxY) maxY = y;
+            if (x < minX) {
+                minX = x;
+            }
+            if (x > maxX) {
+                maxX = x;
+            }
+            if (y < minY) {
+                minY = y;
+            }
+            if (y > maxY) {
+                maxY = y;
+            }
         }
         return { minX, maxX, minY, maxY };
+    }
+
+    keyPos(key: string): Pos {
+        const [xStr, yStr] = key.split(",");
+        return { x: parseInt(xStr, 10), y: parseInt(yStr, 10) };
     }
 
     set(x: number, y: number, cell: Cell) {
@@ -335,6 +311,7 @@ class DungeonMap {
         }
         this.grid.set(`${x},${y}`, cell);
     }
+
     get(x: number, y: number): Cell | undefined {
         return this.grid.get(`${x},${y}`);
     }
@@ -352,30 +329,42 @@ class DungeonMap {
         return data;
     }
 
-    openDirections(p: Pos): direction[] {
+    openDirections(p: Pos): Direction[] {
         const cell = this.get(p.x, p.y);
         if (!cell) {
             return [];
         }
         const exits = cell.exits();
-        const directions: direction[] = [];
+        const directions: Direction[] = [];
         for (const exit of exits) {
             if (exit.x === 0 && !this.get(p.x - 1, p.y)) {
                 directions.push("X-");
-            } else if (exit.x === 7 && !this.get(p.x + 1, p.y)) {
+            } else if (exit.x === CELL_SIZE - 1 && !this.get(p.x + 1, p.y)) {
                 directions.push("X+");
             } else if (exit.y === 0 && !this.get(p.x, p.y - 1)) {
                 directions.push("Y-");
-            } else if (exit.y === 7 && !this.get(p.x, p.y + 1)) {
+            } else if (exit.y === CELL_SIZE - 1 && !this.get(p.x, p.y + 1)) {
                 directions.push("Y+");
             }
         }
         return directions;
     }
 
-    fits(cell: Cell, p: Pos): boolean {
+    /**
+     * Returns true if the given cell will align to the exits of all of the
+     * existing cells.
+     *
+     * It automatically fits with any neighboring cells that are not yet
+     * set.
+     */
+    fits(cell: Cell, p: Pos, options: {
+        newExits: "never" | "always";
+    } = {
+        newExits: "always",
+    }): boolean {
         const exits = cell.exits();
 
+        let newExitCount = 0;
         for (let ny = -1; ny <= 1; ny++) {
             for (let nx = -1; nx <= 1; nx++) {
                 if (nx === 0 && ny === 0) {
@@ -388,12 +377,29 @@ class DungeonMap {
 
                 // If there's no neighbor in that direction, we
                 // don't have to worry about exits aligning.
+                //
+                // Unless we have the noNewExits option set, in which case
+                // we have to make sure there are no exits on that side.
                 if (!n) {
+                    let sideExits = [];
+                    if (nx === -1) {
+                        sideExits = exits.filter((exit) => exit.x === 0);
+                    } else if (nx === 1) {
+                        sideExits = exits.filter((exit) => exit.x === CELL_SIZE - 1);
+                    } else if (ny === -1) {
+                        sideExits = exits.filter((exit) => exit.y === 0);
+                    } else if (ny === 1) {
+                        sideExits = exits.filter((exit) => exit.y === CELL_SIZE - 1);
+                    }
+                    newExitCount += sideExits.length;
+                    if (options.newExits === "never" && newExitCount > 0) {
+                        return false;
+                    }
                     continue;
                 }
 
                 if (nx === -1) {
-                    const entrances = n.exits().filter((exit) => exit.x === 7);
+                    const entrances = n.exits().filter((exit) => exit.x === CELL_SIZE - 1);
                     for (const door of entrances) {
                         if (cell.get(0, door.y) !== 0) {
                             return false;
@@ -401,7 +407,7 @@ class DungeonMap {
                     }
                     for (const exit of exits) {
                         if (exit.x === 0) {
-                            if (n.get(7, exit.y) !== 0) {
+                            if (n.get(CELL_SIZE - 1, exit.y) !== 0) {
                                 return false;
                             }
                         }
@@ -409,19 +415,19 @@ class DungeonMap {
                 } else if (nx === 1) {
                     const entrances = n.exits().filter((exit) => exit.x === 0);
                     for (const door of entrances) {
-                        if (cell.get(7, door.y) !== 0) {
+                        if (cell.get(CELL_SIZE - 1, door.y) !== 0) {
                             return false;
                         }
                     }
                     for (const exit of exits) {
-                        if (exit.x === 7) {
+                        if (exit.x === CELL_SIZE - 1) {
                             if (n.get(0, exit.y) !== 0) {
                                 return false;
                             }
                         }
                     }
                 } else if (ny === -1) {
-                    const entrances = n.exits().filter((exit) => exit.y === 7);
+                    const entrances = n.exits().filter((exit) => exit.y === CELL_SIZE - 1);
                     for (const door of entrances) {
                         if (cell.get(door.x, 0) !== 0) {
                             return false;
@@ -429,7 +435,7 @@ class DungeonMap {
                     }
                     for (const exit of exits) {
                         if (exit.y === 0) {
-                            if (n.get(exit.x, 7) !== 0) {
+                            if (n.get(exit.x, CELL_SIZE - 1) !== 0) {
                                 return false;
                             }
                         }
@@ -437,12 +443,12 @@ class DungeonMap {
                 } else if (ny === 1) {
                     const entrances = n.exits().filter((exit) => exit.y === 0);
                     for (const door of entrances) {
-                        if (cell.get(door.x, 7) !== 0) {
+                        if (cell.get(door.x, CELL_SIZE - 1) !== 0) {
                             return false;
                         }
                     }
                     for (const exit of exits) {
-                        if (exit.y === 7) {
+                        if (exit.y === CELL_SIZE - 1) {
                             if (n.get(exit.x, 0) !== 0) {
                                 return false;
                             }
@@ -452,6 +458,9 @@ class DungeonMap {
             }
         }
 
+        if (options.newExits === "always" && newExitCount < 1) {
+            return false;
+        }
         return true;
     }
 
@@ -462,55 +471,69 @@ class DungeonMap {
     }
 }
 
-function build() {
+async function build() {
     const rng = RNG.makeRandom();
-    const database = generateCells();
+    const database = await generateCells();
 
     const map = new DungeonMap();
 
-    const startLoc = { x: 0, y: 0 };
+    let loc = { x: 0, y: 0 };
     const startCell = database.selectRandom().clone();
-    map.set(startLoc.x, startLoc.y, startCell);
+    map.set(loc.x, loc.y, startCell);
 
-    let loc = startLoc;
-    for (let i = 0; i < 64; i++) {
-        console.log("STEP", i);
+    for (let i = 0; i < 20; i++) {
         const directions = map.openDirections(loc);
         if (directions.length === 0) {
             console.log("No open directions, stopping", i);
             break;
         }
         const dir = rng.select(directions);
-        let nextCell = database.select((next) => {
-            if (next.exits().length <= 1) {
-                return false;
-            }
-            return map.fits(next, addPos(loc, dir));
+        const nextCell = database.select((next) => {
+            return map.fits(next, addPos(loc, dir), { newExits: "always" });
         })?.clone();
-        if (!nextCell) {
-            nextCell = map.buildFittingCell(addPos(loc, dir));
-        }
         if (!nextCell) {
             console.log(`No fitting cell found, stopping (${dir}), ${i}`);
             break;
         }
-        console.log(`Selected cell (${dir}):\n` + nextCell.display());
 
         const nextLoc = addPos(loc, dir);
         map.set(nextLoc.x, nextLoc.y, nextCell);
         loc = nextLoc;
     }
 
-    for (const key of map.grid.keys()) {
-        const pos = key.split(",").map((v) => parseInt(v, 10));
-        const directions = map.openDirections({ x: pos[0], y: pos[1] });
-        if (directions.length === 0) {
-            continue;
+    type FillSpots = {
+        pos: Pos;
+        direction: Direction;
+    };
+
+    for (let step = 0; step < 10; step++) {
+        const openSpots: FillSpots[] = [];
+        for (const key of map.grid.keys()) {
+            const pos = map.keyPos(key);
+            for (const dir of map.openDirections(pos)) {
+                openSpots.push({ pos, direction: dir });
+            }
         }
-        for (const dir of directions) {
-            const nextLoc = addPos({ x: pos[0], y: pos[1] }, dir);
-            const cell = map.buildFittingCell(nextLoc);
-            map.set(nextLoc.x, nextLoc.y, cell);
+        console.log("Open cells:", openSpots.length);
+        if (openSpots.length === 0) {
+            break;
+        }
+
+        for (let i = 0; i < 1000 && openSpots.length > 0; i++) {
+            const index = rng.selectIndex(openSpots);
+            const { pos, direction } = openSpots[index];
+            const nextPos = addPos(pos, direction);
+            const nextCell = database.select((next) => {
+                return map.fits(next, nextPos, { newExits: "never" });
+            })?.clone();
+            if (!nextCell) {
+                continue;
+            }
+            if (!map.get(nextPos.x, nextPos.y)) {
+                map.set(nextPos.x, nextPos.y, nextCell);
+            }
+            openSpots.splice(index, 1);
+            i--;
         }
     }
 
@@ -518,9 +541,18 @@ function build() {
 }
 
 export function AppView(): JSX.Element {
-    const map = React.useMemo(() => {
-        return build();
+    const [map, setMap] = React.useState<DungeonMap | null>(null);
+    React.useEffect(() => {
+        const buildMap = async () => {
+            const newMap = await build();
+            setMap(newMap);
+        };
+        buildMap();
     }, []);
+
+    if (!map) {
+        return <div>Generating...</div>;
+    }
 
     const data = map.data();
 
@@ -552,8 +584,8 @@ function CellView({ cell }: { cell: Cell | undefined }): JSX.Element {
                         <div
                             key={colIndex}
                             style={{
-                                width: 8,
-                                height: 8,
+                                width: 6,
+                                height: 6,
                                 backgroundColor: value ? "#000" : bg,
                                 border: "1px solid #555",
                             }}

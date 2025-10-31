@@ -24,7 +24,10 @@ export class RNG {
 
     constructor(seed: number) {
         this._seed = seed;
-        this._rng = randomSeeded(BigInt(seed));
+        const i = Math.floor(seed);
+        const f = seed - i;
+        const bi = BigInt(i + Math.floor(f * 1e8));
+        this._rng = randomSeeded(bi);
     }
 
     clone(): RNG {

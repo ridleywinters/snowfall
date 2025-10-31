@@ -9,6 +9,7 @@ build: ensure build-only
 build-only:
     mkdir -p dist
     cp -f src/dist/* dist/
+    cp -f "${REPO_ROOT}/source/assets/base/sprites/tiles-map-16x16.png" dist/
     deno bundle \
       --unstable-raw-imports \
       --platform=browser \
