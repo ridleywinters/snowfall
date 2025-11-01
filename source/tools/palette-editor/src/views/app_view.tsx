@@ -1,4 +1,6 @@
-import { useLocalStorage } from "@raiment-ui";
+import * as core from "@raiment-core";
+import { type ColorHexString } from "@raiment-core";
+import { invokeDownload, useLocalStorage } from "@raiment-ui";
 import React, { JSX } from "react";
 
 export function AppView(): JSX.Element {
@@ -32,31 +34,9 @@ export function AppView(): JSX.Element {
 
     const exportGPL = React.useCallback(() => {
         // Flatten all colors into a single array
-        const allColors = orderedColors.flat();
-
-        // Build GIMP Palette format
-        let gplContent = "GIMP Palette\n";
-        gplContent += "#\n";
-
-        allColors.forEach((hex, idx) => {
-            const r = parseInt(hex.substring(1, 3), 16);
-            const g = parseInt(hex.substring(3, 5), 16);
-            const b = parseInt(hex.substring(5, 7), 16);
-            // Format: R G B Name (3 characters wide for RGB values)
-            gplContent += `${r.toString().padStart(3, " ")} ${g.toString().padStart(3, " ")} ${
-                b.toString().padStart(3, " ")
-            }\tColor ${idx}\n`;
-        });
-
-        const blob = new Blob([gplContent], { type: "text/plain" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "palette.gpl";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        const allColors = orderedColors.flat() as ColorHexString[];
+        const gplContent = core.stringifyGIMPPalette(allColors);
+        invokeDownload("palette.gpl", gplContent, "text/plain");
     }, [orderedColors]);
 
     return (

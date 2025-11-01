@@ -1,33 +1,34 @@
 {
-  "imports": {
-    "@/": "./src/",
-    "react": "npm:react@^19.2.0"
-  },
+    "imports": {
+        "@/": "./src/",
+        "react": "npm:react@^19.2.0"
+    },
 
-  "compilerOptions": {
-    "strict": true,
-    "lib": [
-      "deno.ns",
-      "deno.window",
-      "esnext"
-    ]
-  },
-  "fmt": {
-    "useTabs": false,
-    "indentWidth": 4,
-    "lineWidth": 100
-  },
-  "lint": {
-    "rules": {
-      "tags": [
-        "recommended"
-      ],
-      "exclude": [
-        "require-await",
-        "require-yield",
-        "no-explicit-any",
-        "no-unused-vars"
-      ]
+    "compilerOptions": {
+        "strict": true,
+        "lib": [
+            "deno.ns",
+            "deno.window",
+            "dom",
+            "esnext"
+        ]
+    },
+    "fmt": {
+        "useTabs": false,
+        "indentWidth": 4,
+        "lineWidth": 100
+    },
+    "lint": {
+        "rules": {
+            "tags": [
+                "recommended"
+            ],
+            "exclude": [
+                "require-await",
+                "require-yield",
+                "no-explicit-any",
+                "no-unused-vars"
+            ]
+        }
     }
-  }
 }

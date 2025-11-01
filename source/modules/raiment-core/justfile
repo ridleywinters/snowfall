@@ -6,4 +6,5 @@ ensure:
 build: ensure
 
 test: build
+    deno check src/
     deno test --allow-read src/
