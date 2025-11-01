@@ -5,13 +5,13 @@ ensure:
 
 build: ensure
 
-dev: build
+dev +args:
     watchexec \
         --watch src \
         --watch "${REPO_ROOT}/source/modules/raiment-core/src" \
         --watch "${REPO_ROOT}/source/modules/raiment-shell/src" \
         --exts ts,tsx,html,css,png,yaml,json \
-        "just run"
+        "just run {{args}}"
 
-run:
-    deno run -A ./main.ts
+run +args:
+    deno run -A ./main.ts {{args}}

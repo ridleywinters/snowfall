@@ -36,7 +36,7 @@ export async function serverStart(options: ServerOptions) {
         cprintln(
             "#555",
             [
-                `File modification [${filename}](filename)`,
+                `File update [${filename}](filename)`,
                 `Broadcasting [app.reload](string)`,
             ].join("\n"),
         );
@@ -55,6 +55,7 @@ export async function serverStart(options: ServerOptions) {
             cprintln();
             cprintln(`${options.title} is running on [http://localhost:${options.port}](url)`);
             cprintln("#555", `Platform: ${Deno.build.os}-${Deno.build.arch}`);
+            cprintln("#555", `Working directory: ${relativeCWD()}`);
             cprintln("#555", "Press [Ctrl+C](#89C) to stop the server.");
 
             cprintln(
@@ -82,4 +83,13 @@ export async function serverStart(options: ServerOptions) {
             return handler(req);
         },
     });
+}
+
+function relativeCWD(): string {
+    let cwd = Deno.cwd();
+    const home = Deno.env.get("HOME") ?? "";
+    if (cwd.startsWith(`${home}/`)) {
+        cwd = `~/${cwd.slice(home.length)}`;
+    }
+    return cwd;
 }

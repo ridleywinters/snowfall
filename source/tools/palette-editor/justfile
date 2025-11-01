@@ -1,5 +1,7 @@
 import "../../common/common.justfile"
 
+CWD := shell('pwd')
+
 #==============================================================================
 # default
 #==============================================================================
@@ -53,19 +55,14 @@ dev-client:
         "just build-only && sleep 1"
 
 
-# Unfortunately can't just call "just dev" in the server directory
-# as that requires changing the working directory, but we want the
-# working to remain relative to this project.
+
 
 # Starts the development server with live reloading
 dev-server:
-    watchexec \
-        --restart \
-        --watch "${REPO_ROOT}/source/tools/raiment-dev-server/src" \
-        --watch "${REPO_ROOT}/source/modules/raiment-core/src" \
-        --watch "${REPO_ROOT}/source/modules/raiment-ui/src" \
-        --exts ts,tsx,html,css,png,yaml,json \
-        "just run-server"
+    cd "${REPO_ROOT}/source/tools/raiment-dev-server" && just dev \
+        --working-directory "{{CWD}}" \
+        --title "palette-editor" \
+        --port 7050
 
 #==============================================================================
 # run
@@ -74,4 +71,4 @@ dev-server:
 run-server:
     deno run -A "${REPO_ROOT}/source/tools/raiment-dev-server/main.ts" \
         --port 7050 \
-        --title "palette-editor"
+        --title "palette-editor"    
