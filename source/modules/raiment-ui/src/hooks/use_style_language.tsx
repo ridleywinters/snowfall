@@ -1,4 +1,6 @@
 /**
+ * Style Language
+ *
  * The "style language" hook provides a dynamic Tailwind-like syntax for
  * concisely specifying styles in React components.
  *
@@ -321,6 +323,7 @@ const RULES_TABLE_SOURCE: StyleLanguageRule[] = [
     //-------------------------------------------------------------------------
     // Cursor
     //-------------------------------------------------------------------------
+
     [
         /cursor-(auto|default|pointer|wait|text|move|help|not-allowed)/,
         (m) => `cursor: ${m[1]};`,

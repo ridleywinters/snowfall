@@ -1,5 +1,13 @@
 import React from "react";
 
+/**
+ * Triggers a callback on receiving a server-side event.
+ *
+ * Assumes all server-side events will be sent as valid, parseable JSON.
+ *
+ * Uses a reconnect strategy with a backoff and eventual failure after too many
+ * retries.
+ */
 export function useServerSideEvents(url: string, cb: (data: any) => void): void {
     React.useEffect(() => {
         let failures = 0;

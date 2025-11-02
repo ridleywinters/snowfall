@@ -1,6 +1,16 @@
 import { EventEmitter } from "@raiment-core";
 import React from "react";
 
+/**
+ * useEventListener hook
+ *
+ * A hook specifically for the Raiment EventEmitter class.  It will subscribe to an
+ * event or events on the emitter and both (1) trigger a rerender of the component
+ * when that event is emitted and (2) optionally call a callback function as well.
+ *
+ * The emitter also returns a "generation" number that will on each event which
+ * can be used, for example, in a dependency array to trigger other effects.
+ */
 export function useEventListener<S extends Record<string, any>>(
     emitter: EventEmitter<S> | undefined,
     eventNamesParam: keyof S | (keyof S)[],
