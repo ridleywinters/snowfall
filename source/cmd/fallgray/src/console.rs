@@ -1,7 +1,13 @@
 use crate::console_variables::ConsoleVariableRegistry;
 use crate::script::process_script;
 use crate::ui::PlayerStats;
-use bevy::prelude::*;
+use bevy::{
+    ecs::relationship::{RelatedSpawnerCommands, Relationship},
+    log,
+    prelude::*,
+};
+use regex::Regex;
+use std::sync::LazyLock;
 
 #[derive(Resource)]
 pub struct ConsoleState {
@@ -26,8 +32,8 @@ impl Default for ConsoleState {
             command_history: Vec::new(),
             history_index: None,
             key_repeat_timer: 0.0,
-            key_repeat_initial_delay: 0.5, // 500ms initial delay
-            key_repeat_rate: 0.03,         // 30ms between repeats (33 repeats/sec)
+            key_repeat_initial_delay: 0.3, // initial delay (in seconds)
+            key_repeat_rate: 0.015,        // time between repeats (in seconds)
         }
     }
 }
@@ -44,67 +50,76 @@ pub struct ConsoleHistoryScroll;
 #[derive(Component)]
 pub struct ConsoleInputText;
 
+fn spawn_with<'a>(e: &'a mut EntityCommands<'a>, styles: Vec<&str>) -> &'a mut EntityCommands<'a> {
+    node_style(e, styles.join(" ").as_str());
+    e
+}
+
+fn styled_root_with<F>(spawner: &mut Commands, styles: Vec<&str>, callback: F)
+where
+    F: FnOnce(&mut EntityCommands),
+{
+    let mut entity_commands = spawner.spawn_empty();
+    node_style(&mut entity_commands, styles.join(" ").as_str());
+    callback(&mut entity_commands);
+}
+
+fn styled_child_with<'w, R, F>(
+    spawner: &mut RelatedSpawnerCommands<'w, R>,
+    styles: Vec<&str>,
+    callback: F,
+) where
+    R: Relationship + 'static,
+    F: FnOnce(&mut EntityCommands),
+{
+    let mut entity_commands = spawner.spawn_empty();
+    node_style(&mut entity_commands, styles.join(" ").as_str());
+    callback(&mut entity_commands);
+}
+
 pub fn startup_console(mut commands: Commands) {
     // Initialize console state
     commands.insert_resource(ConsoleState::default());
 
     // Console overlay (initially hidden)
-    commands
-        .spawn((
-            Node {
-                width: Val::Percent(100.0),
-                height: Val::Percent(50.0),
-                position_type: PositionType::Absolute,
-                top: Val::Px(0.0),
-                left: Val::Px(0.0),
-                flex_direction: FlexDirection::Column,
-                padding: UiRect::all(Val::Px(8.0)),
-                display: Display::None, // Hidden by default
-                ..default()
-            },
-            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.925)),
-            ZIndex(1000), // Render on top of all other UI
-            ConsoleContainer,
-        ))
-        .with_children(|parent| {
-            // Scrollable history area container
-            parent
-                .spawn((
-                    Node {
-                        flex_grow: 1.0,
-                        flex_direction: FlexDirection::Column,
-                        overflow: Overflow::scroll_y(), // Enable vertical scrolling
-                        ..default()
+    styled_root_with(
+        &mut commands,
+        vec![
+            "width-100% height-50% absolute top0 left0 flex-col p8 display-none",
+            "z1000",
+            "bg-srgba-(0.0,0.0,0.0,0.925)",
+        ],
+        |root| {
+            root.insert(ConsoleContainer).with_children(|parent| {
+                // Scrollable history area container
+                styled_child_with(
+                    parent,
+                    vec!["flex-col grow1 scroll-y", "bg-rgba(0.1,0.1,0.1,0.3)"],
+                    |parent| {
+                        parent.insert(ConsoleHistoryScroll).with_children(|parent| {
+                            // History text
+                            parent.spawn((
+                                Text::new(""),
+                                TextFont {
+                                    font_size: 16.0,
+                                    ..default()
+                                },
+                                TextColor(Color::srgb(0.8, 0.8, 0.6)),
+                                Node {
+                                    padding: UiRect::all(Val::Px(8.0)),
+                                    ..default()
+                                },
+                                ConsoleHistoryText,
+                            ));
+                        });
                     },
-                    BackgroundColor(Color::srgba(0.1, 0.1, 0.1, 0.3)),
-                    ConsoleHistoryScroll,
-                ))
-                .with_children(|parent| {
-                    // History text
-                    parent.spawn((
-                        Text::new(""),
-                        TextFont {
-                            font_size: 16.0,
-                            ..default()
-                        },
-                        TextColor(Color::srgb(0.8, 0.8, 0.6)),
-                        Node {
-                            padding: UiRect::all(Val::Px(8.0)),
-                            ..default()
-                        },
-                        ConsoleHistoryText,
-                    ));
-                });
+                );
 
-            // Input prompt
-            parent
-                .spawn(Node {
-                    flex_direction: FlexDirection::Row,
-                    align_items: AlignItems::Center,
-                    column_gap: Val::Px(8.0),
-                    margin: UiRect::top(Val::Px(8.0)),
-                    ..default()
-                })
+                // Input prompt
+                spawn_with(
+                    &mut parent.spawn_empty(), //
+                    vec!["flex-row-center gap8 mt8"],
+                )
                 .with_children(|parent| {
                     // Prompt symbol
                     parent.spawn((
@@ -127,7 +142,308 @@ pub fn startup_console(mut commands: Commands) {
                         ConsoleInputText,
                     ));
                 });
-        });
+            });
+        },
+    );
+}
+
+struct StyledBundle {
+    node: Node,
+    z_index: Option<ZIndex>,
+    background_color: Option<BackgroundColor>,
+}
+
+enum StyleHandler {
+    Void(fn(&mut StyledBundle)),
+    I32(fn(&mut StyledBundle, i32)),
+    F32F32F32F32(fn(&mut StyledBundle, f32, f32, f32, f32)),
+}
+
+static COMPILED_PATTERNS: LazyLock<Vec<(Regex, StyleHandler)>> = LazyLock::new(|| {
+    use StyleHandler::*;
+    let patterns: Vec<(&str, StyleHandler)> = vec![
+        //
+        // Positioning
+        //
+        (
+            "absolute",
+            Void(|b| {
+                b.node.position_type = PositionType::Absolute;
+            }),
+        ),
+        (
+            r"top(\d+)",
+            I32(|b, v| {
+                b.node.top = Val::Px(v as f32);
+            }),
+        ),
+        (
+            r"left(\d+)",
+            I32(|b, v| {
+                b.node.left = Val::Px(v as f32);
+            }),
+        ),
+        (
+            r"bottom(\d+)",
+            I32(|b, v| {
+                b.node.bottom = Val::Px(v as f32);
+            }),
+        ),
+        (
+            r"right(\d+)",
+            I32(|b, v| {
+                b.node.right = Val::Px(v as f32);
+            }),
+        ),
+        (
+            r"width-(\d+)",
+            I32(|b, v| {
+                b.node.width = Val::Px(v as f32);
+            }),
+        ),
+        (
+            r"width-(\d+)%",
+            I32(|b, v| {
+                b.node.width = Val::Percent(v as f32);
+            }),
+        ),
+        (
+            r"height-(\d+)",
+            I32(|b, v| {
+                b.node.height = Val::Px(v as f32);
+            }),
+        ),
+        (
+            r"height-(\d+)%",
+            I32(|b, v| {
+                b.node.height = Val::Percent(v as f32);
+            }),
+        ),
+        (
+            r"z(\d)+",
+            I32(|b, v| {
+                b.z_index = Some(ZIndex(v));
+            }),
+        ),
+        //
+        // Display
+        //
+        (
+            "display-none",
+            Void(|b| {
+                b.node.display = Display::None;
+            }),
+        ),
+        //
+        // Flex related
+        //
+        (
+            "flex-row",
+            Void(|b| {
+                b.node.flex_direction = FlexDirection::Row;
+            }),
+        ),
+        (
+            "flex-row-center",
+            Void(|b| {
+                b.node.flex_direction = FlexDirection::Row;
+                b.node.align_items = AlignItems::Center;
+            }),
+        ),
+        (
+            "flex-col",
+            Void(|b| {
+                b.node.flex_direction = FlexDirection::Column;
+            }),
+        ),
+        (
+            r"gap(\d+)",
+            I32(|b, v| {
+                b.node.column_gap = Val::Px(v as f32);
+                b.node.row_gap = Val::Px(v as f32);
+            }),
+        ),
+        (
+            r"grow(\d+)",
+            I32(|b, v| {
+                b.node.flex_grow = v as f32;
+            }),
+        ),
+        //
+        // Overflow
+        //
+        (
+            "scroll-y",
+            Void(|b| {
+                b.node.overflow = Overflow::scroll_y();
+            }),
+        ),
+        //
+        // Margins
+        //
+        (
+            r"mt(\d+)",
+            I32(|b, v| b.node.margin = UiRect::top(Val::Px(v as f32))),
+        ),
+        (
+            r"mb(\d+)",
+            I32(|b, v| b.node.margin = UiRect::bottom(Val::Px(v as f32))),
+        ),
+        (
+            r"ml(\d+)",
+            I32(|b, v| b.node.margin = UiRect::left(Val::Px(v as f32))),
+        ),
+        (
+            r"mr(\d+)",
+            I32(|b, v| b.node.margin = UiRect::right(Val::Px(v as f32))),
+        ),
+        (
+            r"mx(\d+)",
+            I32(|b, v| b.node.margin = UiRect::horizontal(Val::Px(v as f32))),
+        ),
+        (
+            r"my(\d+)",
+            I32(|b, v| b.node.margin = UiRect::vertical(Val::Px(v as f32))),
+        ),
+        (
+            r"m(\d+)",
+            I32(|b, v| b.node.margin = UiRect::all(Val::Px(v as f32))),
+        ),
+        //
+        // Padding
+        //
+        (
+            r"pt(\d+)",
+            I32(|b, v| b.node.padding = UiRect::top(Val::Px(v as f32))),
+        ),
+        (
+            r"pb(\d+)",
+            I32(|b, v| b.node.padding = UiRect::bottom(Val::Px(v as f32))),
+        ),
+        (
+            r"pl(\d+)",
+            I32(|b, v| b.node.padding = UiRect::left(Val::Px(v as f32))),
+        ),
+        (
+            r"pr(\d+)",
+            I32(|b, v| b.node.padding = UiRect::right(Val::Px(v as f32))),
+        ),
+        (
+            r"px(\d+)",
+            I32(|b, v| b.node.padding = UiRect::horizontal(Val::Px(v as f32))),
+        ),
+        (
+            r"py(\d+)",
+            I32(|b, v| b.node.padding = UiRect::vertical(Val::Px(v as f32))),
+        ),
+        (
+            r"p(\d+)",
+            I32(|b, v| b.node.padding = UiRect::all(Val::Px(v as f32))),
+        ),
+        //
+        // Backgrounds
+        //
+        (
+            r"bg-srgba-\(([\d\.]+),([\d\.]+),([\d\.]+),([\d\.]+)\)",
+            F32F32F32F32(|bundle, r, g, b, a| {
+                let color = Color::srgba(r, g, b, a);
+                bundle.background_color = Some(BackgroundColor(color));
+            }),
+        ),
+    ];
+
+    let mut compiled = Vec::new();
+    for (pattern, handler) in patterns {
+        if let Ok(regex) = Regex::new(&format!("^{}$", pattern)) {
+            compiled.push((regex, handler));
+        } else {
+            log::warn!("Invalid regex pattern in console styles: {}", pattern);
+        }
+    }
+
+    compiled
+});
+
+/// Uses a tailwind-like shorthand to allow for more concise UI definitions
+fn node_style(commands: &mut EntityCommands, sl: &str) {
+    let mut bundle = StyledBundle {
+        node: Node { ..default() },
+        z_index: None,
+        background_color: None,
+    };
+
+    let tokens: Vec<&str> = sl.split_whitespace().collect();
+    for token in tokens {
+        let mut matched = false;
+
+        for (regex, handler) in COMPILED_PATTERNS.iter() {
+            use StyleHandler::*;
+            let Some(captures) = regex.captures(token) else {
+                continue;
+            };
+            matched = true;
+
+            // Reminder first capture group is the whole match so all the length
+            // checks are +1 of the number of arguments/sub-groups expected.
+            match handler {
+                Void(func) => {
+                    if captures.len() != 1 {
+                        log::warn!("Unexpected capture group for style: {}", token);
+                        break;
+                    }
+                    func(&mut bundle);
+                }
+                I32(func) => {
+                    if captures.len() != 2 {
+                        log::warn!("No capture group for I32 style: {}", token);
+                        break;
+                    }
+                    let Ok(value) = captures[1].parse::<i32>() else {
+                        log::warn!("Invalid number in div style: {}", token);
+                        break;
+                    };
+                    func(&mut bundle, value);
+                }
+                F32F32F32F32(func) => {
+                    if captures.len() != 5 {
+                        log::warn!(
+                            "Incorrect number of capture groups for F32F32F32F32 style: {}",
+                            token
+                        );
+                        break;
+                    }
+                    let Ok(v1) = captures[1].parse::<f32>() else {
+                        log::warn!("Invalid first float in div style: {}", token);
+                        break;
+                    };
+                    let Ok(v2) = captures[2].parse::<f32>() else {
+                        log::warn!("Invalid second float in div style: {}", token);
+                        break;
+                    };
+                    let Ok(v3) = captures[3].parse::<f32>() else {
+                        log::warn!("Invalid third float in div style: {}", token);
+                        break;
+                    };
+                    let Ok(v4) = captures[4].parse::<f32>() else {
+                        log::warn!("Invalid fourth float in div style: {}", token);
+                        break;
+                    };
+                    func(&mut bundle, v1, v2, v3, v4);
+                }
+            }
+        }
+        if !matched {
+            log::warn!("Unknown div style: {}", token);
+        }
+    }
+
+    commands.insert(bundle.node);
+    if let Some(z_index) = bundle.z_index {
+        commands.insert(z_index);
+    }
+    if let Some(background_color) = bundle.background_color {
+        commands.insert(background_color);
+    }
 }
 
 pub fn update_console_toggle(
