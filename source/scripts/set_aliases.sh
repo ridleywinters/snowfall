@@ -34,11 +34,11 @@ function gs() {
 # This should be removed if and when this project grows in complexity.
 #
 function gcap() {
-    pushd $REPO_ROOT
-    git add .
-    git commit -m "$*"
-    git pull
+    pushd $REPO_ROOT > /dev/null
+    git add . && 
+    git commit -m "$*" &&
+    git pull && 
     git push
-    popd
+    popd > /dev/null
 }
 
