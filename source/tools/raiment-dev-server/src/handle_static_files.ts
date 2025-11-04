@@ -52,8 +52,9 @@ async function serveFile(
 
         const extension = filePath.slice(filePath.lastIndexOf("."));
         const contentType = contentTypeMap[extension] || "text/plain";
+        const prettyFilePath = prettifyPath(filePath);
 
-        cprintln("#555", `Serving [${filePath}](filename) [(${contentType})](filetype)`);
+        cprintln("#555", `Serving [${prettyFilePath}](filename) [(${contentType})](filetype)`);
         return new Response(fileContent, {
             headers: { "Content-Type": contentType },
         });
@@ -65,4 +66,21 @@ async function serveFile(
             return new Response("Internal Server Error", { status: 500 });
         }
     }
+}
+
+function prettifyPath(path: string): string {
+    let prettyPath = path;
+    const cwd = Deno.cwd();
+    if (prettyPath.startsWith(cwd)) {
+        prettyPath = `.${prettyPath.slice(cwd.length)}`;
+    }
+    const repoRoot = Deno.env.get("REPO_ROOT") ?? "";
+    if (repoRoot.length > 0 && prettyPath.startsWith(repoRoot)) {
+        prettyPath = `%${prettyPath.slice(repoRoot.length)}`;
+    }
+    const home = Deno.env.get("HOME") ?? "";
+    if (home.length > 0 && prettyPath.startsWith(home)) {
+        prettyPath = `~${prettyPath.slice(home.length)}`;
+    }
+    return prettyPath;
 }
