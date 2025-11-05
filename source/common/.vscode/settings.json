@@ -87,6 +87,8 @@
 
     "workbench.colorCustomizations": {
         "editor.background": "#131212",
+        "editorLineNumber.foreground": "#29283c",
+        "editorLineNumber.activeForeground": "#8b4b4b",
 
         "editorBracketHighlight.foreground1": "#a6605b",
         "editorBracketHighlight.foreground2": "#7a214a",
@@ -134,9 +136,21 @@
                 }
             },
             {
-                "scope": "entity.name.type, support.type, support.class",
+                "scope": "entity.name.type",
                 "settings": {
                     "foreground": "#3b84c4"
+                }
+            },
+            {
+                "scope": "support.type, support.class",
+                "settings": {
+                    "foreground": "#d82baa"
+                }
+            },
+            {
+                "scope": "support.type.property-name",
+                "settings": {
+                    "foreground": "#4db6d0"
                 }
             },
             {
