@@ -176,7 +176,20 @@ impl CVarRegistry {
     }
 
     pub fn save_to_yaml(&self, path: &str) -> Result<(), String> {
-        let yaml = serde_yaml::to_string(&self.vars)
+        // Sort variables alphabetically by name and create a YAML mapping
+        let mut sorted_vars: Vec<(&String, &CVarValue)> = self.vars.iter().collect();
+        sorted_vars.sort_by(|a, b| a.0.cmp(b.0));
+        
+        // Create a YAML mapping that preserves insertion order
+        let mut mapping = serde_yaml::Mapping::new();
+        for (key, value) in sorted_vars {
+            let key_value = serde_yaml::Value::String(key.clone());
+            let value_value = serde_yaml::to_value(value)
+                .map_err(|e| format!("Failed to serialize value for {}: {}", key, e))?;
+            mapping.insert(key_value, value_value);
+        }
+        
+        let yaml = serde_yaml::to_string(&mapping)
             .map_err(|e| format!("Failed to serialize cvars: {}", e))?;
 
         std::fs::write(path, yaml).map_err(|e| format!("Failed to write cvars.yaml: {}", e))?;

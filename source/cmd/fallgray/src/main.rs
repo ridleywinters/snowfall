@@ -753,7 +753,10 @@ fn update_save_map_on_input(
         if let Err(e) = map.save_to_yaml() {
             eprintln!("Failed to save map: {}", e);
         } else {
-            println!("Map saved successfully with {} items!", map.item_world_positions.len());
+            println!(
+                "Map saved successfully with {} items!",
+                map.item_world_positions.len()
+            );
         }
     }
 }
@@ -833,7 +836,9 @@ fn update_check_item_collision(
             let item_type = map
                 .item_world_positions
                 .iter()
-                .find(|(pos, _)| (pos.x - item_pos.x).abs() < 0.1 && (pos.y - item_pos.y).abs() < 0.1)
+                .find(|(pos, _)| {
+                    (pos.x - item_pos.x).abs() < 0.1 && (pos.y - item_pos.y).abs() < 0.1
+                })
                 .map(|(_, item_type)| item_type.as_str())
                 .unwrap_or("apple");
 

@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use crate::Billboard;
 use crate::actor::{ActorDefinitions, ActorPosition};
-use crate::item::{ItemDefinitions, ItemPosition};
+use crate::item::{Item, ItemDefinitions, ItemPosition};
 use crate::texture_loader::{load_image_texture, load_weapon_texture};
 
 /// Grid size for walls (8×8 grid)
@@ -273,6 +273,9 @@ impl Map {
         let entity = commands
             .spawn((
                 Billboard,
+                Item {
+                    interaction_radius: 2.0,
+                },
                 Mesh3d(meshes.add(Self::create_billboard_mesh(item_def.scale))),
                 MeshMaterial3d(materials.add(StandardMaterial {
                     base_color_texture: Some(texture_handle),
