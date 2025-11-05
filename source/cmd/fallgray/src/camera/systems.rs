@@ -1,4 +1,5 @@
 use super::components::*;
+use super::player::Player;
 use crate::collision::{CollisionMap, PLAYER_RADIUS};
 use crate::console::ConsoleState;
 use bevy::prelude::*;
@@ -181,13 +182,13 @@ pub fn update_player_light_animation(
     time: Res<Time>,
     mut light_query: Query<(&mut PointLight, &mut LightColorAnimation), With<PlayerLight>>,
 ) {
-    if let Ok((mut light, mut anim)) = light_query.single_mut() {
+    for (mut light, mut anim) in light_query.iter_mut() {
         let dt = time.delta_secs();
         anim.time += 0.1 * dt * anim.speed;
 
-        let light_yellow = hex_to_color("#e8d599");
-        let red = hex_to_color("#e7844fff");
-        let yellow_white = hex_to_color("#e4bb6f");
+        let light_yellow = hex_to_color("#f0ead5ff");
+        let red = hex_to_color("#eac2acff");
+        let yellow_white = hex_to_color("#dfac99ff");
 
         // Create a smooth oscillation through the three colors
         // Use sine wave that goes 0 -> 1 -> 2 -> 1 -> 0 (one full cycle)
@@ -255,7 +256,7 @@ pub fn spawn_player_lights(commands: &mut Commands, position: Vec3) {
         PlayerLight {
             offset: Vec3::new(0.0, 1.5, 4.0),
         },
-        LightColorAnimation::default(),
+        LightColorAnimation::new(0.0, 0.1),
     ));
 
     // Add a second point light that follows the player with no Y offset
@@ -271,6 +272,6 @@ pub fn spawn_player_lights(commands: &mut Commands, position: Vec3) {
         PlayerLight {
             offset: Vec3::new(0.5, -0.5, 4.0),
         },
-        LightColorAnimation::default(),
+        LightColorAnimation::new(0.5, 0.2),
     ));
 }

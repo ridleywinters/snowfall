@@ -14,14 +14,14 @@ actors:
     on_death: "# spider defeated"
   
   cat:
-    sprite: "base/sprites/cat.png"
+    sprite: "base/sprites/cat-00.png"
     scale: 1.5
     max_health: 15.0
     on_hit: "do_damage 5"
     on_death: "# cat defeated"
   
   dog:
-    sprite: "base/sprites/dog.png"
+    sprite: "base/sprites/dog-00.png"
     scale: 1.8
     max_health: 20.0
     on_hit: "do_damage 7"

@@ -851,7 +851,6 @@ fn spawn_actor(
             health: actor_def.max_health,
             max_health: actor_def.max_health,
             scale: actor_def.scale,
-            indicator_entity: None,
         },
     ));
 }
@@ -1068,72 +1067,20 @@ fn update_actor_death(
 }
 
 fn update_actor_health_indicators(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut actor_query: Query<(Entity, &Transform, &mut Actor)>,
+    actor_query: Query<(&MeshMaterial3d<StandardMaterial>, &Actor)>,
 ) {
-    for (actor_entity, _actor_transform, mut actor) in actor_query.iter_mut() {
+    for (material_handle, actor) in actor_query.iter() {
         let health_percentage = actor.health / actor.max_health;
         let should_show_indicator = health_percentage < 0.4;
 
-        if should_show_indicator && actor.indicator_entity.is_none() {
-            // Spawn health indicator as child of actor
-            use bevy::asset::RenderAssetUsages;
-            use bevy::mesh::{Indices, PrimitiveTopology};
-
-            let indicator_scale = 0.15;
-            let indicator_material = materials.add(StandardMaterial {
-                base_color: Color::srgb(1.0, 0.0, 0.0), // Red color
-                alpha_mode: bevy::render::alpha::AlphaMode::Blend,
-                unlit: false,
-                cull_mode: None,
-                ..default()
-            });
-
-            let mut indicator_mesh = Mesh::new(
-                PrimitiveTopology::TriangleList,
-                RenderAssetUsages::default(),
-            );
-
-            let positions = vec![
-                [0.0, -indicator_scale, -indicator_scale],
-                [0.0, indicator_scale, -indicator_scale],
-                [0.0, indicator_scale, indicator_scale],
-                [0.0, -indicator_scale, indicator_scale],
-            ];
-            indicator_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
-            indicator_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, vec![[1.0, 0.0, 0.0]; 4]);
-
-            let uvs = vec![[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]];
-            indicator_mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
-
-            indicator_mesh.insert_indices(Indices::U32(vec![0, 1, 2, 0, 2, 3]));
-
-            // Position indicator above actor
-            let indicator_z = actor.scale + 0.5;
-
-            let indicator_entity = commands
-                .spawn((
-                    Mesh3d(meshes.add(indicator_mesh)),
-                    MeshMaterial3d(indicator_material),
-                    Transform::from_translation(Vec3::new(0.0, 0.0, indicator_z)),
-                    Billboard,
-                    HealthIndicator,
-                ))
-                .id();
-
-            // Parent indicator to actor
-            commands
-                .entity(actor_entity)
-                .add_children(&[indicator_entity]);
-
-            actor.indicator_entity = Some(indicator_entity);
-        } else if !should_show_indicator && actor.indicator_entity.is_some() {
-            // Remove health indicator if health recovers
-            if let Some(indicator_entity) = actor.indicator_entity {
-                commands.entity(indicator_entity).despawn();
-                actor.indicator_entity = None;
+        if let Some(material) = materials.get_mut(&material_handle.0) {
+            if should_show_indicator {
+                // Tint sprite 50% red
+                material.base_color = Color::srgb(1.0, 0.5, 0.5);
+            } else {
+                // Normal white color
+                material.base_color = Color::WHITE;
             }
         }
     }

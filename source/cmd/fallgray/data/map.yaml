@@ -89,3 +89,63 @@ map:
     - x: 288.0
       y: 192.0
       actor_type: spider
+    - x: 48.0
+      y: 32.0
+      actor_type: cat
+    - x: 80.0
+      y: 48.0
+      actor_type: spider
+    - x: 280.0
+      y: 40.0
+      actor_type: skeleton
+    - x: 320.0
+      y: 48.0
+      actor_type: dog
+    - x: 440.0
+      y: 32.0
+      actor_type: spider
+    - x: 480.0
+      y: 64.0
+      actor_type: cat
+    - x: 32.0
+      y: 96.0
+      actor_type: dog
+    - x: 144.0
+      y: 88.0
+      actor_type: spider
+    - x: 240.0
+      y: 104.0
+      actor_type: skeleton
+    - x: 416.0
+      y: 144.0
+      actor_type: cat
+    - x: 480.0
+      y: 152.0
+      actor_type: dog
+    - x: 80.0
+      y: 176.0
+      actor_type: spider
+    - x: 400.0
+      y: 288.0
+      actor_type: skeleton
+    - x: 480.0
+      y: 304.0
+      actor_type: cat
+    - x: 64.0
+      y: 320.0
+      actor_type: dog
+    - x: 160.0
+      y: 328.0
+      actor_type: spider
+    - x: 280.0
+      y: 360.0
+      actor_type: skeleton
+    - x: 480.0
+      y: 440.0
+      actor_type: cat
+    - x: 120.0
+      y: 456.0
+      actor_type: dog
+    - x: 240.0
+      y: 472.0
+      actor_type: spider

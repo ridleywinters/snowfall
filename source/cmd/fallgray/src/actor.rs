@@ -31,7 +31,6 @@ pub struct Actor {
     pub health: f32,
     pub max_health: f32,
     pub scale: f32,
-    pub indicator_entity: Option<Entity>,
 }
 
 /// Position data for actors in the map file
@@ -41,7 +40,3 @@ pub struct ActorPosition {
     pub y: f32,
     pub actor_type: String,
 }
-
-/// Marker component for health indicator sprites
-#[derive(Component)]
-pub struct HealthIndicator;

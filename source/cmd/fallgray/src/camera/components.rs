@@ -1,12 +1,5 @@
 use bevy::prelude::*;
 
-/// Player/Camera entity marker with movement and rotation speeds
-#[derive(Component)]
-pub struct Player {
-    pub speed: f32,
-    pub rot_speed: f32,
-}
-
 /// Light that follows the player with a fixed offset
 #[derive(Component)]
 pub struct PlayerLight {
@@ -26,5 +19,11 @@ impl Default for LightColorAnimation {
             time: 0.0,
             speed: 1.0,
         }
+    }
+}
+
+impl LightColorAnimation {
+    pub fn new(time: f32, speed: f32) -> Self {
+        Self { time, speed }
     }
 }
