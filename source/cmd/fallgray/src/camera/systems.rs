@@ -1,14 +1,15 @@
 use super::components::*;
 use super::player::Player;
-use crate::collision::{CollisionMap, PLAYER_RADIUS};
+use crate::collision::PLAYER_RADIUS;
 use crate::console::ConsoleState;
+use crate::map::Map;
 use bevy::prelude::*;
 use rand::Rng;
 
 pub fn update_camera_control_system(
     time: Res<Time>,
     input: Res<ButtonInput<KeyCode>>,
-    collision_map: Res<CollisionMap>,
+    map: Res<Map>,
     console_state: Res<ConsoleState>,
     mut query: Query<(&mut Transform, &Player)>,
 ) {
@@ -143,7 +144,7 @@ pub fn update_camera_control_system(
             let new_y = transform.translation.y + move_vec_xy.y * player.speed * dt;
 
             // Check collision before moving
-            if collision_map.can_move_to(new_x, new_y, PLAYER_RADIUS) {
+            if map.can_move_to(new_x, new_y, PLAYER_RADIUS) {
                 transform.translation.x = new_x;
                 transform.translation.y = new_y;
             }

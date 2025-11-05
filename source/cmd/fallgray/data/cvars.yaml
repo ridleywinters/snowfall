@@ -1,57 +1,57 @@
-weapon.windup_pos_z:
-  type: float
-  value: -0.8
-weapon.swing_end:
-  type: float
-  value: 0.8
-weapon.followthrough_end:
-  type: float
-  value: 1.0
-weapon.windup_rotation_z:
-  type: float
-  value: -0.5
-weapon.thrust_pos_x:
-  type: float
-  value: 0.3
 weapon.swing_duration:
   type: float
   value: 0.4
 weapon.rest_pos_x:
   type: float
   value: 0.9
-weapon.thrust_rotation_z:
+weapon.rest_pos_z:
   type: float
-  value: 1.55
-weapon.windup_end:
-  type: float
-  value: 0.15
-weapon.rest_rotation_z:
-  type: float
-  value: 0.0
-weapon.windup_pos_x:
-  type: float
-  value: 0.7
-weapon.rest_pos_y:
-  type: float
-  value: -0.45
-weapon.rest_rotation_y:
-  type: float
-  value: 0.0
-weapon.windup_rotation_y:
-  type: float
-  value: 0.8
-weapon.thrust_pos_z:
-  type: float
-  value: -1.5
+  value: -1.2
 weapon.thrust_rotation_y:
   type: float
   value: 0.1
 weapon.windup_pos_y:
   type: float
   value: -0.35
+weapon.windup_end:
+  type: float
+  value: 0.15
+weapon.rest_pos_y:
+  type: float
+  value: -0.45
+weapon.windup_pos_x:
+  type: float
+  value: 0.7
+weapon.thrust_rotation_z:
+  type: float
+  value: 1.55
+weapon.swing_end:
+  type: float
+  value: 0.8
+weapon.windup_pos_z:
+  type: float
+  value: -0.8
+weapon.followthrough_end:
+  type: float
+  value: 1.0
+weapon.thrust_pos_z:
+  type: float
+  value: -1.5
+weapon.windup_rotation_z:
+  type: float
+  value: -0.5
+weapon.thrust_pos_x:
+  type: float
+  value: 0.3
 weapon.thrust_pos_y:
   type: float
   value: -0.45
-weapon.rest_pos_z:
+weapon.windup_rotation_y:
   type: float
-  value: -1.2
+  value: 0.8
+weapon.rest_rotation_y:
+  type: float
+  value: 0.0
+weapon.rest_rotation_z:
+  type: float
+  value: 0.0

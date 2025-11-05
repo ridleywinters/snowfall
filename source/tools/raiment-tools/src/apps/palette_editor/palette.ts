@@ -76,13 +76,32 @@ export class Palette {
 
         const colors: ColorHexString[] = [];
 
+        // Helper function to interpolate hue in the shortest direction
+        const interpolateHue = (h1: number, h2: number, t: number): number => {
+            let diff = h2 - h1;
+            // Normalize difference to [-180, 180]
+            if (diff > 180) {
+                diff -= 360;
+            } else if (diff < -180) {
+                diff += 360;
+            }
+            // Interpolate and wrap around
+            let result = h1 + diff * t;
+            if (result < 0) {
+                result += 360;
+            } else if (result >= 360) {
+                result -= 360;
+            }
+            return Math.round(result);
+        };
+
         // Element 0: shade
         colors.push(shade);
 
         // Elements 1-2: blends between shade and primary
         for (let j = 1; j <= 2; j++) {
             const a = j / 3;
-            const h = Math.round(hslShade.h * (1 - a) + hslPrimary.h * a);
+            const h = interpolateHue(hslShade.h, hslPrimary.h, a);
             const s = Math.round(hslShade.s * (1 - a) + hslPrimary.s * a);
             const l = Math.round(hslShade.l * (1 - a) + hslPrimary.l * a);
             colors.push(hslToHex(h, s, l) as ColorHexString);
@@ -94,7 +113,7 @@ export class Palette {
         // Elements 4-5: blends between primary and highlight
         for (let j = 1; j <= 2; j++) {
             const a = j / 3;
-            const h = Math.round(hslPrimary.h * (1 - a) + hslHighlight.h * a);
+            const h = interpolateHue(hslPrimary.h, hslHighlight.h, a);
             const s = Math.round(hslPrimary.s * (1 - a) + hslHighlight.s * a);
             const l = Math.round(hslPrimary.l * (1 - a) + hslHighlight.l * a);
             colors.push(hslToHex(h, s, l) as ColorHexString);

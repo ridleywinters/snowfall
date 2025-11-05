@@ -3,6 +3,9 @@ mod camera;
 mod collision;
 mod console;
 mod item;
+mod map;
+#[cfg(test)]
+mod map_test;
 mod scripting;
 mod texture_loader;
 mod toolbar;
@@ -12,30 +15,17 @@ mod ui_styles;
 use actor::*;
 use bevy::prelude::*;
 use camera::{CameraPlugin, Player, spawn_camera, spawn_player_lights};
-use collision::{CollisionMap, check_circle_collision};
+use collision::check_circle_collision;
 use console::*;
 use item::*;
+use map::Map;
 use scripting::{CVarRegistry, ScriptingPlugin};
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::f32::consts::FRAC_PI_2;
 use texture_loader::{load_image_texture, load_weapon_texture};
 use toolbar::Toolbar;
 use ui::*;
 
-#[derive(Deserialize, Serialize)]
-struct MapFile {
-    map: MapData,
-}
-
-#[derive(Deserialize, Serialize)]
-struct MapData {
-    grid: Vec<String>,
-    #[serde(default)]
-    items: Vec<ItemPosition>,
-    #[serde(default)]
-    actors: Vec<ActorPosition>,
-}
+// MapFile and MapData are now defined in map.rs
 
 fn main() {
     // Get asset path from REPO_ROOT environment variable
@@ -198,12 +188,7 @@ fn startup_system(
             .with_translation(Vec3::new(256.0, 256.0, 16.0)),
     ));
 
-    // Load map from data/map.yaml
-    let map_yaml = std::fs::read_to_string("data/map.yaml").expect("Failed to read data/map.yaml");
-    let map_file: MapFile = serde_yaml::from_str(&map_yaml).expect("Failed to parse map.yaml");
-    let lines = map_file.map.grid;
-
-    // Load item definitions from data/item_definitions.yaml
+    // Load item definitions
     let filename = std::env::var("REPO_ROOT")
         .map(|repo_root| format!("{}/source/assets/base/items/items.yaml", repo_root))
         .unwrap_or_else(|_| "data/item_definitions.yaml".to_string());
@@ -227,124 +212,19 @@ fn startup_system(
         actors: actor_defs_file.actors,
     };
 
-    // Build collision map
-    let height = lines.len();
-    let width = lines.iter().map(|l| l.len()).max().unwrap_or(0);
+    // Load map from file and spawn all entities
+    let map = Map::load_from_file(
+        &mut commands,
+        &asset_server,
+        &mut meshes,
+        &mut materials,
+        &item_definitions,
+        &actor_definitions,
+    )
+    .expect("Failed to load map");
 
-    let mut collision_grid = HashMap::new();
-
-    let wall_material = materials.add(StandardMaterial {
-        base_color_texture: Some(load_image_texture(
-            &asset_server,
-            "base/textures/stone_2.png",
-        )),
-        base_color: Color::WHITE,
-        perceptual_roughness: 1.0,
-        metallic: 0.0,
-        reflectance: 0.0,
-        uv_transform: bevy::math::Affine2::from_scale(Vec2::new(1.0, 1.0)),
-        ..default()
-    });
-
-    // Add some 8x8x8 cubes that will be used as the walls in the map
-    // Translate the mesh by +4.0 in Z so cubes sit on the ground plane
-    let cube_mesh = meshes.add(
-        Cuboid::new(8.0, 8.0, 8.0)
-            .mesh()
-            .build()
-            .translated_by(Vec3::new(4.0, 4.0, 4.0)),
-    );
-
-    let cube_mesh2 = meshes.add(
-        Cuboid::new(8.0, 8.0, 16.0)
-            .mesh()
-            .build()
-            .translated_by(Vec3::new(4.0, 4.0, 8.0)),
-    );
-
-    // Parse the map and create cubes for each 'X'
-    for (row, line) in lines.iter().enumerate() {
-        for (col, ch) in line.chars().enumerate() {
-            // Mark filled cells in collision grid
-            let is_solid = matches!(ch, 'X' | 'x');
-            if is_solid {
-                collision_grid.insert((col as i32, row as i32), true);
-            }
-
-            // Position: each cell is 8x8, so multiply by 8
-            let x = col as f32 * 8.0;
-            let y = row as f32 * 8.0;
-
-            match ch {
-                'X' => {
-                    commands.spawn((
-                        Mesh3d(cube_mesh2.clone()),
-                        MeshMaterial3d(wall_material.clone()),
-                        Transform::from_translation(Vec3::new(x, y, 0.0)),
-                    ));
-                }
-                'x' => {
-                    commands.spawn((
-                        Mesh3d(cube_mesh.clone()),
-                        MeshMaterial3d(wall_material.clone()),
-                        Transform::from_translation(Vec3::new(x, y, 0.0)),
-                    ));
-                }
-                _ => {}
-            }
-        }
-    }
-
-    // Insert collision map as a resource
-    commands.insert_resource(CollisionMap::new(collision_grid, width, height));
-
-    // Initialize item tracker and spawn existing items
-    let mut item_tracker = ItemTracker::default();
-
-    for item_pos in &map_file.map.items {
-        // Track the item position
-        let grid_x = (item_pos.x / 8.0).floor() as i32;
-        let grid_y = (item_pos.y / 8.0).floor() as i32;
-        item_tracker.positions.insert((grid_x, grid_y));
-        item_tracker
-            .world_positions
-            .push((item_pos.x, item_pos.y, item_pos.item_type.clone()));
-
-        // Get scale from item definition for positioning
-        let item_def = item_definitions
-            .items
-            .get(&item_pos.item_type)
-            .unwrap_or_else(|| panic!("Item definition not found: {}", item_pos.item_type));
-        let scale = item_def.scale;
-
-        // Spawn the item billboard
-        spawn_item(
-            &mut commands,
-            &mut meshes,
-            &mut materials,
-            &asset_server,
-            &item_definitions.items,
-            Vec3::new(item_pos.x, item_pos.y, scale),
-            &item_pos.item_type,
-        );
-    }
-
-    commands.insert_resource(item_tracker);
+    commands.insert_resource(map);
     commands.insert_resource(item_definitions);
-
-    // Spawn actors from map
-    for actor_pos in &map_file.map.actors {
-        spawn_actor(
-            &mut commands,
-            &mut meshes,
-            &mut materials,
-            &asset_server,
-            &actor_definitions.actors,
-            Vec3::new(actor_pos.x, actor_pos.y, 0.0), // Z will be set by spawn_actor based on scale
-            &actor_pos.actor_type,
-        );
-    }
-
     commands.insert_resource(actor_definitions);
 
     commands.insert_resource(bevy::light::AmbientLight {
@@ -747,123 +627,6 @@ fn spawn_weapon_sprite(
         .add_children(&[weapon_entity]);
 }
 
-fn spawn_item(
-    commands: &mut Commands,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<StandardMaterial>>,
-    asset_server: &Res<AssetServer>,
-    item_definitions: &HashMap<String, ItemDefinition>,
-    position: Vec3,
-    item_key: &str,
-) {
-    let item_def = item_definitions
-        .get(item_key)
-        .unwrap_or_else(|| panic!("Item definition not found: {}", item_key));
-
-    let sprite_material = materials.add(StandardMaterial {
-        base_color_texture: Some(load_image_texture(asset_server, &item_def.image)),
-        base_color: Color::WHITE,
-        alpha_mode: bevy::render::alpha::AlphaMode::Blend,
-        unlit: false,
-        cull_mode: None,
-        ..default()
-    });
-
-    use bevy::asset::RenderAssetUsages;
-    use bevy::mesh::{Indices, PrimitiveTopology};
-
-    let scale = item_def.scale;
-
-    let mut billboard_mesh = Mesh::new(
-        PrimitiveTopology::TriangleList,
-        RenderAssetUsages::default(),
-    );
-
-    let positions = vec![
-        [0.0, -scale, -scale],
-        [0.0, scale, -scale],
-        [0.0, scale, scale],
-        [0.0, -scale, scale],
-    ];
-    billboard_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
-    billboard_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, vec![[1.0, 0.0, 0.0]; 4]);
-
-    let uvs = vec![[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]];
-    billboard_mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
-
-    billboard_mesh.insert_indices(Indices::U32(vec![0, 1, 2, 0, 2, 3]));
-
-    commands.spawn((
-        Mesh3d(meshes.add(billboard_mesh)),
-        MeshMaterial3d(sprite_material),
-        Transform::from_translation(position),
-        Billboard,
-        Item {
-            interaction_radius: 2.0,
-        },
-    ));
-}
-
-fn spawn_actor(
-    commands: &mut Commands,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<StandardMaterial>>,
-    asset_server: &Res<AssetServer>,
-    actor_definitions: &HashMap<String, ActorDefinition>,
-    position: Vec3,
-    actor_key: &str,
-) {
-    let actor_def = actor_definitions
-        .get(actor_key)
-        .unwrap_or_else(|| panic!("Actor definition not found: {}", actor_key));
-
-    let sprite_material = materials.add(StandardMaterial {
-        base_color_texture: Some(load_image_texture(asset_server, &actor_def.sprite)),
-        base_color: Color::WHITE,
-        alpha_mode: bevy::render::alpha::AlphaMode::Blend,
-        unlit: false,
-        cull_mode: None,
-        ..default()
-    });
-
-    use bevy::asset::RenderAssetUsages;
-    use bevy::mesh::{Indices, PrimitiveTopology};
-
-    let scale = actor_def.scale;
-
-    let mut billboard_mesh = Mesh::new(
-        PrimitiveTopology::TriangleList,
-        RenderAssetUsages::default(),
-    );
-
-    let positions = vec![
-        [0.0, -scale, -scale],
-        [0.0, scale, -scale],
-        [0.0, scale, scale],
-        [0.0, -scale, scale],
-    ];
-    billboard_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
-    billboard_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, vec![[1.0, 0.0, 0.0]; 4]);
-
-    let uvs = vec![[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]];
-    billboard_mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
-
-    billboard_mesh.insert_indices(Indices::U32(vec![0, 1, 2, 0, 2, 3]));
-
-    commands.spawn((
-        Mesh3d(meshes.add(billboard_mesh)),
-        MeshMaterial3d(sprite_material),
-        Transform::from_translation(Vec3::new(position.x, position.y, scale)),
-        Billboard,
-        Actor {
-            actor_type: actor_key.to_string(),
-            health: actor_def.max_health,
-            max_health: actor_def.max_health,
-            scale: actor_def.scale,
-        },
-    ));
-}
-
 fn update_spawn_item_on_click(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -874,7 +637,7 @@ fn update_spawn_item_on_click(
     camera_query: Query<(&Camera, &GlobalTransform), With<Camera3d>>,
     ground_query: Query<&GlobalTransform, With<GroundPlane>>,
     ui_interaction_query: Query<&Interaction>,
-    mut item_tracker: ResMut<ItemTracker>,
+    mut map: ResMut<Map>,
     toolbar: Res<Toolbar>,
     item_definitions: Res<ItemDefinitions>,
     console_state: Res<ConsoleState>,
@@ -945,7 +708,7 @@ fn update_spawn_item_on_click(
     let grid_y = (intersection.y / 2.0).floor() as i32;
 
     // Check if there's already an item at this position
-    if item_tracker.positions.contains(&(grid_x, grid_y)) {
+    if map.get_item_at(grid_x, grid_y).is_some() {
         return;
     }
 
@@ -960,34 +723,22 @@ fn update_spawn_item_on_click(
         _ => "apple", // Fallback (shouldn't happen due to earlier check)
     };
 
-    // Track the item
-    item_tracker.positions.insert((grid_x, grid_y));
-    item_tracker
-        .world_positions
-        .push((world_x, world_y, item_key.to_string()));
-
-    // Get scale from item definition for positioning
-    let item_def = item_definitions
-        .items
-        .get(item_key)
-        .expect("Item definition not found");
-    let scale = item_def.scale;
-
-    // Spawn item billboard at the intersection point
-    spawn_item(
+    // Spawn item using map
+    map.spawn_item(
         &mut commands,
+        &asset_server,
         &mut meshes,
         &mut materials,
-        &asset_server,
-        &item_definitions.items,
-        Vec3::new(world_x, world_y, scale),
+        &item_definitions,
+        world_x,
+        world_y,
         item_key,
     );
 }
 
 fn update_save_map_on_input(
     input: Res<ButtonInput<KeyCode>>,
-    item_tracker: Res<ItemTracker>,
+    map: Res<Map>,
     console_state: Res<ConsoleState>,
 ) {
     // Don't save map if console is open
@@ -999,50 +750,10 @@ fn update_save_map_on_input(
     if (input.pressed(KeyCode::ControlLeft) || input.pressed(KeyCode::ControlRight))
         && input.just_pressed(KeyCode::KeyS)
     {
-        // Read the current map file
-        let map_yaml = match std::fs::read_to_string("data/map.yaml") {
-            Ok(content) => content,
-            Err(e) => {
-                eprintln!("Failed to read map.yaml: {}", e);
-                return;
-            }
-        };
-
-        let mut map_file: MapFile = match serde_yaml::from_str(&map_yaml) {
-            Ok(file) => file,
-            Err(e) => {
-                eprintln!("Failed to parse map.yaml: {}", e);
-                return;
-            }
-        };
-
-        // Update items in the map data
-        map_file.map.items = item_tracker
-            .world_positions
-            .iter()
-            .map(|(x, y, item_type)| ItemPosition {
-                x: *x,
-                y: *y,
-                item_type: item_type.clone(),
-            })
-            .collect();
-
-        // Serialize and save
-        let yaml_output = match serde_yaml::to_string(&map_file) {
-            Ok(yaml) => yaml,
-            Err(e) => {
-                eprintln!("Failed to serialize map: {}", e);
-                return;
-            }
-        };
-
-        if let Err(e) = std::fs::write("data/map.yaml", yaml_output) {
-            eprintln!("Failed to write map.yaml: {}", e);
+        if let Err(e) = map.save_to_yaml() {
+            eprintln!("Failed to save map: {}", e);
         } else {
-            println!(
-                "Map saved successfully with {} items!",
-                item_tracker.world_positions.len()
-            );
+            println!("Map saved successfully with {} items!", map.item_world_positions.len());
         }
     }
 }
@@ -1052,6 +763,7 @@ fn update_actor_death(
     actor_query: Query<(Entity, &Actor)>,
     mut stats: ResMut<PlayerStats>,
     mut cvars: ResMut<CVarRegistry>,
+    mut map: ResMut<Map>,
     actor_definitions: Res<ActorDefinitions>,
 ) {
     for (entity, actor) in actor_query.iter() {
@@ -1068,6 +780,9 @@ fn update_actor_death(
             }
 
             println!("{} defeated!", actor.actor_type);
+
+            // Unregister from map
+            map.unregister_actor(entity);
 
             // Despawn actor (children like health indicator will be handled by bevy)
             commands.entity(entity).despawn();
@@ -1101,7 +816,7 @@ fn update_check_item_collision(
     item_query: Query<(Entity, &Transform, &Item)>,
     mut stats: ResMut<PlayerStats>,
     mut cvars: ResMut<CVarRegistry>,
-    mut item_tracker: ResMut<ItemTracker>,
+    mut map: ResMut<Map>,
     item_definitions: Res<ItemDefinitions>,
 ) {
     let Ok(player_transform) = player_query.single() else {
@@ -1114,12 +829,12 @@ fn update_check_item_collision(
         let item_pos = item_transform.translation;
 
         if check_circle_collision(player_pos, item_pos, item.interaction_radius) {
-            // Find the item type from the tracker
-            let item_type = item_tracker
-                .world_positions
+            // Find the item type from the map
+            let item_type = map
+                .item_world_positions
                 .iter()
-                .find(|(x, y, _)| (*x - item_pos.x).abs() < 0.1 && (*y - item_pos.y).abs() < 0.1)
-                .map(|(_, _, item_type)| item_type.as_str())
+                .find(|(pos, _)| (pos.x - item_pos.x).abs() < 0.1 && (pos.y - item_pos.y).abs() < 0.1)
+                .map(|(_, item_type)| item_type.as_str())
                 .unwrap_or("apple");
 
             // Get the item definition and process the script
@@ -1134,8 +849,10 @@ fn update_check_item_collision(
             // Remove item from world
             commands.entity(entity).despawn();
 
-            // Remove from tracker
-            item_tracker.remove_at_position(item_pos.x, item_pos.y);
+            // Remove from map tracking
+            let grid_x = (item_pos.x / 2.0).floor() as i32;
+            let grid_y = (item_pos.y / 2.0).floor() as i32;
+            map.unregister_item(grid_x, grid_y);
 
             println!("Collected item! Fatigue: {}", stats.stamina);
         }

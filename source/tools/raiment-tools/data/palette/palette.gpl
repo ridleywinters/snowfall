@@ -3,108 +3,108 @@ GIMP Palette
   0   0   0	Color 0
 255 255 255	Color 1
 255   0 255	Color 2
-103  99 105	Color 3
+255 151   0	Color 3
 142 148 149	Color 4
 189 190 187	Color 5
 233 232 232	Color 6
  13  13  13	Color 7
- 36  36  35	Color 8
- 54  58  58	Color 9
+ 36  35  36	Color 8
+ 58  54  58	Color 9
  79  76  82	Color 10
  95  91  98	Color 11
 110 106 113	Color 12
 126 121 129	Color 13
-127 122 127	Color 14
-139 144 146	Color 15
-162 166 160	Color 16
-184 178 178	Color 17
-209 194 194	Color 18
-231 217 217	Color 19
-248 241 241	Color 20
-117 167  68	Color 21
-129 185  49	Color 22
-143 203  32	Color 23
-166 222  13	Color 24
-199 238  43	Color 25
-216 236  85	Color 26
-231 238 129	Color 27
- 42  65  63	Color 28
- 41  87  69	Color 29
- 35 108  58	Color 30
- 28 135  30	Color 31
- 35 152  31	Color 32
- 46 173  37	Color 33
- 58 189  40	Color 34
- 34 102 145	Color 35
- 34 105 160	Color 36
- 33 109 176	Color 37
- 33 110 192	Color 38
- 68 156 228	Color 39
-122 195 240	Color 40
-184 228 249	Color 41
- 53  31  71	Color 42
- 62  33 105	Color 43
- 61  31 142	Color 44
- 43  24 185	Color 45
- 37  34 226	Color 46
- 79  89 232	Color 47
-124 143 238	Color 48
-124   4  74	Color 49
-153  10  94	Color 50
-181  18 113	Color 51
-206  28 132	Color 52
-233  63 162	Color 53
-240 112 184	Color 54
-247 166 212	Color 55
- 82  20  20	Color 56
-126  22  22	Color 57
-172  21  21	Color 58
-224  16  16	Color 59
-237  32  18	Color 60
-237  65  38	Color 61
-237  90  53	Color 62
-178 105  21	Color 63
-200 131  20	Color 64
-216 157  19	Color 65
-238 190  17	Color 66
-239 215  77	Color 67
-243 231 130	Color 68
-247 245 187	Color 69
-219 158 118	Color 70
-217 172 135	Color 71
-217 182 150	Color 72
-217 193 165	Color 73
-226 203 177	Color 74
-233 213 190	Color 75
-240 223 204	Color 76
- 73  65  45	Color 77
- 82  69  40	Color 78
- 96  76  36	Color 79
-107  79  31	Color 80
-128  98  45	Color 81
-144 113  60	Color 82
-161 131  79	Color 83
-  0   0   0	Color 84
-  0   0   0	Color 85
-  0   0   0	Color 86
-  0   0   0	Color 87
-  0   0   0	Color 88
-  0   0   0	Color 89
-  0   0   0	Color 90
-  0   0   0	Color 91
-  0   0   0	Color 92
-  0   0   0	Color 93
-  0   0   0	Color 94
-  0   0   0	Color 95
-  0   0   0	Color 96
-  0   0   0	Color 97
-  0   0   0	Color 98
-  0   0   0	Color 99
-  0   0   0	Color 100
-  0   0   0	Color 101
-  0   0   0	Color 102
-  0   0   0	Color 103
-  0   0   0	Color 104
+109 118 142	Color 14
+141 151 176	Color 15
+179 189 208	Color 16
+219 225 235	Color 17
+233 227 238	Color 18
+241 234 237	Color 19
+244 242 240	Color 20
+ 73  83 111	Color 21
+108  95 129	Color 22
+147 123 147	Color 23
+160 152 155	Color 24
+201 166 168	Color 25
+230 199 188	Color 26
+249 239 225	Color 27
+117 167  68	Color 28
+129 185  49	Color 29
+143 203  32	Color 30
+166 222  13	Color 31
+199 238  43	Color 32
+216 236  85	Color 33
+231 238 129	Color 34
+ 65  72  50	Color 35
+ 67  92  45	Color 36
+ 53 111  37	Color 37
+ 28 135  30	Color 38
+ 25 154  36	Color 39
+ 21 178  42	Color 40
+ 16 198  52	Color 41
+ 24  62  62	Color 42
+ 31  96 101	Color 43
+ 34 126 145	Color 44
+ 33 152 192	Color 45
+ 64 203 221	Color 46
+113 229 225	Color 47
+165 238 226	Color 48
+ 53  31  71	Color 49
+ 62  33 105	Color 50
+ 61  31 142	Color 51
+ 43  24 185	Color 52
+ 37  34 226	Color 53
+ 79  89 232	Color 54
+124 143 238	Color 55
+124   4  74	Color 56
+153  10  94	Color 57
+181  18 113	Color 58
+206  28 132	Color 59
+233  63 162	Color 60
+240 112 184	Color 61
+247 166 212	Color 62
+ 82  20  20	Color 63
+126  22  22	Color 64
+172  21  21	Color 65
+224  16  16	Color 66
+237  32  18	Color 67
+237  65  38	Color 68
+237  90  53	Color 69
+152  68  11	Color 70
+185  79   9	Color 71
+218  95   7	Color 72
+250 106   3	Color 73
+252 152  39	Color 74
+251 193  75	Color 75
+251 221 111	Color 76
+148  46  56	Color 77
+209  51  57	Color 78
+230 106 101	Color 79
+245 161 152	Color 80
+245 203 173	Color 81
+247 233 196	Color 82
+248 249 215	Color 83
+219 158 118	Color 84
+217 172 135	Color 85
+217 182 150	Color 86
+217 193 165	Color 87
+226 203 177	Color 88
+233 213 190	Color 89
+240 223 204	Color 90
+ 50  38  36	Color 91
+ 81  54  47	Color 92
+113  68  50	Color 93
+153  87  51	Color 94
+166 104  54	Color 95
+173 119  56	Color 96
+186 139  59	Color 97
+102  10  10	Color 98
+103  17  10	Color 99
+ 99  24   9	Color 100
+ 99  31   8	Color 101
+144  63  19	Color 102
+190 102  35	Color 103
+210 145  70	Color 104
   0   0   0	Color 105
   0   0   0	Color 106
   0   0   0	Color 107
