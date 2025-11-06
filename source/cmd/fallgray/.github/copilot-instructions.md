@@ -8,3 +8,4 @@
 
 - Put tests in their own `_test.rst` files
 - Sprites SHOULD BE rendering WITH lighting
+- Helper functions should be defined after public functions in the same file
