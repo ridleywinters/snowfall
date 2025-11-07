@@ -1,24 +1,25 @@
-use crate::game_state::GameState;
-use crate::ui_styles::EntityCommandsUIExt;
 use bevy::prelude::*;
 
-#[derive(Component)]
-pub struct MainMenuUI;
+use crate::game_state::GameState;
+use crate::ui_styles::EntityCommandsUIExt;
 
 #[derive(Component)]
-pub struct GameOverUI;
+pub(super) struct MainMenuUI;
 
 #[derive(Component)]
-pub struct NewGameButton;
+pub(super) struct GameOverUI;
 
 #[derive(Component)]
-pub struct RestartButton;
+pub(super) struct NewGameButton;
 
 #[derive(Component)]
-pub struct QuitButton;
+pub(super) struct RestartButton;
+
+#[derive(Component)]
+pub(super) struct QuitButton;
 
 /// Spawn main menu UI
-pub fn spawn_main_menu(mut commands: Commands) {
+pub(super) fn spawn_main_menu(mut commands: Commands) {
     info!("Spawning main menu UI");
     commands
         .spawn(MainMenuUI)
@@ -69,7 +70,7 @@ pub fn spawn_main_menu(mut commands: Commands) {
 }
 
 /// Spawn game over UI
-pub fn spawn_game_over(mut commands: Commands) {
+pub(super) fn spawn_game_over(mut commands: Commands) {
     info!("Spawning game over UI");
     commands
         .spawn(GameOverUI)
@@ -120,7 +121,7 @@ pub fn spawn_game_over(mut commands: Commands) {
 }
 
 /// Cleanup main menu UI
-pub fn cleanup_main_menu(mut commands: Commands, query: Query<Entity, With<MainMenuUI>>) {
+pub(super) fn cleanup_main_menu(mut commands: Commands, query: Query<Entity, With<MainMenuUI>>) {
     info!(
         "Cleaning up main menu UI (found {} entities)",
         query.iter().count()
@@ -131,7 +132,7 @@ pub fn cleanup_main_menu(mut commands: Commands, query: Query<Entity, With<MainM
 }
 
 /// Cleanup game over UI
-pub fn cleanup_game_over(mut commands: Commands, query: Query<Entity, With<GameOverUI>>) {
+pub(super) fn cleanup_game_over(mut commands: Commands, query: Query<Entity, With<GameOverUI>>) {
     info!(
         "Cleaning up game over UI (found {} entities)",
         query.iter().count()
@@ -142,7 +143,7 @@ pub fn cleanup_game_over(mut commands: Commands, query: Query<Entity, With<GameO
 }
 
 /// Handle button interactions
-pub fn handle_menu_buttons(
+pub(super) fn handle_menu_buttons(
     new_game_query: Query<&Interaction, (With<NewGameButton>, Changed<Interaction>)>,
     restart_query: Query<&Interaction, (With<RestartButton>, Changed<Interaction>)>,
     quit_query: Query<&Interaction, (With<QuitButton>, Changed<Interaction>)>,
@@ -185,7 +186,7 @@ pub fn handle_menu_buttons(
 }
 
 /// Add hover effects to buttons
-pub fn update_button_visuals(
+pub(super) fn update_button_visuals(
     mut query: Query<(&Interaction, &mut BackgroundColor), Changed<Interaction>>,
 ) {
     for (interaction, mut color) in query.iter_mut() {

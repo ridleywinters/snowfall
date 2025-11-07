@@ -5,13 +5,12 @@ mod collision;
 mod combat;
 mod console;
 mod game_state;
-mod game_state_systems;
 mod item;
 mod logging;
 mod map;
 #[cfg(test)]
 mod map_test;
-mod menu_ui;
+mod menu;
 mod scripting;
 mod texture_loader;
 mod toolbar;
@@ -20,21 +19,22 @@ mod ui_styles;
 use actor::*;
 use ai::AIPlugin;
 use bevy::prelude::*;
-use camera::{CameraPlugin, Player, PlayerLightPlugin, spawn_camera, spawn_player_lights};
+use camera::{
+    CameraPlugin, CameraShake, Player, PlayerLightPlugin, spawn_camera, spawn_player_lights,
+    update_camera_shake,
+};
 use collision::check_circle_collision;
 use combat::{
     AttackState, CombatAudio, CombatInput, StateTransition, WeaponDefinitions, apply_status_effect,
     play_hit_sound, play_swing_sound, spawn_blood_particles, spawn_damage_number,
-    update_blood_particles, update_camera_shake, update_damage_numbers, update_status_effects,
+    update_blood_particles, update_damage_numbers, update_status_effects,
 };
 use console::*;
-use game_state::GamePlayEntity;
-use game_state::GameState;
-use game_state_systems::*;
+use game_state::{GamePlayEntity, GameState, GameStatePlugin};
 use item::*;
 use logging::ActorLoggingSystem;
 use map::Map;
-use menu_ui::*;
+use menu::MenuPlugin;
 use scripting::{CVarRegistry, ScriptingPlugin};
 use std::f32::consts::FRAC_PI_2;
 use texture_loader::{load_image_texture, load_weapon_texture};
@@ -65,20 +65,16 @@ fn main() {
                     ..default()
                 }),
         )
-        .init_state::<GameState>()
         .add_systems(Startup, (log_startup, setup_ui_camera))
         .add_plugins(ScriptingPlugin)
+        .add_plugins(GameStatePlugin)
+        .add_plugins(MenuPlugin)
         .add_plugins(CameraPlugin)
         .add_plugins(PlayerLightPlugin)
         .add_plugins(AIPlugin)
         .add_plugins(ConsolePlugin {})
         .add_plugins(toolbar::ToolbarPlugin)
         // Main Menu systems
-        .add_systems(
-            OnEnter(GameState::MainMenu),
-            (spawn_main_menu, unlock_cursor_on_menu),
-        )
-        .add_systems(OnExit(GameState::MainMenu), cleanup_main_menu)
         // Playing state systems
         .add_systems(OnEnter(GameState::Playing), (startup_system, startup_ui))
         .add_systems(
@@ -97,26 +93,8 @@ fn main() {
                 update_spawn_item_on_click,
                 update_save_map_on_input,
                 update_check_item_collision,
-                detect_player_death,
-                initialize_actor_logs,
-                periodic_flush_actor_logs,
             )
                 .run_if(in_state(GameState::Playing)),
-        )
-        .add_systems(
-            OnExit(GameState::Playing),
-            (cleanup_actor_logging, cleanup_game_entities),
-        )
-        // Game Over systems
-        .add_systems(
-            OnEnter(GameState::GameOver),
-            (spawn_game_over, unlock_cursor_on_menu),
-        )
-        .add_systems(OnExit(GameState::GameOver), cleanup_game_over)
-        // Menu button systems (active in all menu states)
-        .add_systems(
-            Update,
-            (handle_menu_buttons, update_button_visuals).run_if(not(in_state(GameState::Playing))),
         )
         .run();
 }
@@ -597,11 +575,11 @@ fn update_weapon_swing_collision(
             if damage_result.critical {
                 commands
                     .entity(camera_entity)
-                    .insert(combat::CameraShake::critical_shake());
+                    .insert(CameraShake::critical_shake());
             } else {
                 commands
                     .entity(camera_entity)
-                    .insert(combat::CameraShake::hit_shake());
+                    .insert(CameraShake::hit_shake());
             }
 
             // Blood particles

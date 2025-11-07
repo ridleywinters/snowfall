@@ -1,8 +1,10 @@
-use crate::camera::{Health, MouseLookSettings};
-use crate::game_state::*;
-use crate::logging::{ActorLogger, ActorLoggingSystem};
 use bevy::prelude::*;
 use bevy::window::{CursorGrabMode, CursorOptions, PrimaryWindow};
+
+use crate::camera::{Health, MouseLookSettings};
+use crate::logging::{ActorLogger, ActorLoggingSystem};
+
+use super::states::*;
 
 /// System to initialize actor logs after startup
 pub fn initialize_actor_logs(

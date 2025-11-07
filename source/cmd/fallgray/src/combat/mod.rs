@@ -18,7 +18,6 @@ pub use audio_feedback::{CombatAudio, play_hit_sound, play_swing_sound};
 pub use damage::calculate_damage;
 pub use status_effects::{apply_status_effect, update_status_effects};
 pub use visual_feedback::{
-    CameraShake, spawn_blood_particles, spawn_damage_number, update_blood_particles,
-    update_camera_shake, update_damage_numbers,
+    spawn_blood_particles, spawn_damage_number, update_blood_particles, update_damage_numbers,
 };
 pub use weapon::WeaponDefinitions;
