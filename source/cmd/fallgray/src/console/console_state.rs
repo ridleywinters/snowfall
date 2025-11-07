@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use super::internal::*;
 
 //=============================================================================
 // Console State
@@ -12,9 +12,14 @@ pub struct ConsoleState {
     pub log: Vec<String>,
     pub command_history: Vec<String>, // Stores only commands (not output)
     pub history_index: Option<usize>, // Current position in command history
-    pub key_repeat_timer: f32,        // Timer for key repeat
+
+    // Manual implementation to handle key repeats in the console.
+    // TODO: is there a a standard way to implement this so a manual implementation is
+    // not necessary? Seems like this should be controlled on an OS level, not implemented
+    // by this app.
+    pub key_repeat_timer: f32,         // Timer for key repeat
     pub key_repeat_initial_delay: f32, // Initial delay before repeat starts
-    pub key_repeat_rate: f32,         // Time between repeats once started
+    pub key_repeat_rate: f32,          // Time between repeats once started
 }
 
 impl Default for ConsoleState {

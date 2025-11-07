@@ -28,6 +28,7 @@ use combat::{
     update_blood_particles, update_camera_shake, update_damage_numbers, update_status_effects,
 };
 use console::*;
+use game_state::GamePlayEntity;
 use game_state::GameState;
 use game_state_systems::*;
 use item::*;
@@ -73,7 +74,10 @@ fn main() {
         .add_plugins(ConsolePlugin {})
         .add_plugins(toolbar::ToolbarPlugin)
         // Main Menu systems
-        .add_systems(OnEnter(GameState::MainMenu), (spawn_main_menu, unlock_cursor_on_menu))
+        .add_systems(
+            OnEnter(GameState::MainMenu),
+            (spawn_main_menu, unlock_cursor_on_menu),
+        )
         .add_systems(OnExit(GameState::MainMenu), cleanup_main_menu)
         // Playing state systems
         .add_systems(OnEnter(GameState::Playing), (startup_system, startup_ui))
@@ -104,7 +108,10 @@ fn main() {
             (cleanup_actor_logging, cleanup_game_entities),
         )
         // Game Over systems
-        .add_systems(OnEnter(GameState::GameOver), (spawn_game_over, unlock_cursor_on_menu))
+        .add_systems(
+            OnEnter(GameState::GameOver),
+            (spawn_game_over, unlock_cursor_on_menu),
+        )
         .add_systems(OnExit(GameState::GameOver), cleanup_game_over)
         // Menu button systems (active in all menu states)
         .add_systems(
@@ -200,7 +207,7 @@ fn startup_system(
     });
 
     commands.spawn((
-        GameEntity,
+        GamePlayEntity,
         Mesh3d(plane_mesh.clone()),
         MeshMaterial3d(plane_material2.clone()),
         // Rotate 90 degrees around X to make it XY plane (facing Z)
@@ -210,7 +217,7 @@ fn startup_system(
     ));
 
     commands.spawn((
-        GameEntity,
+        GamePlayEntity,
         Mesh3d(plane_mesh.clone()),
         MeshMaterial3d(plane_material2.clone()),
         Transform::from_rotation(Quat::from_rotation_x(3.0 * FRAC_PI_2))
@@ -699,7 +706,7 @@ fn spawn_weapon_sprite(
 
     let weapon_entity = commands
         .spawn((
-            GameEntity,
+            GamePlayEntity,
             Mesh3d(meshes.add(weapon_mesh)),
             MeshMaterial3d(sprite_material),
             Transform::from_translation(rest_pos),

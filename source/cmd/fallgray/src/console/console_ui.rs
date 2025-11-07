@@ -1,9 +1,9 @@
 use super::ConsoleState;
+use crate::internal::*;
 use crate::scripting::CVarRegistry;
 use crate::scripting::process_script;
 use crate::ui::PlayerStats;
 use crate::ui_styles::EntityCommandsUIExt;
-use bevy::prelude::*;
 
 //=============================================================================
 // Console UI Components
@@ -31,7 +31,7 @@ pub(super) fn startup_console(mut commands: Commands) {
 
     // Console overlay (initially hidden)
     commands
-        .spawn((crate::game_state_systems::GameEntity, ConsoleContainer))
+        .spawn((GamePlayEntity, ConsoleContainer))
         .styles(&vec![
             "display-none",
             "width-100% height-50% absolute top-0 left-0 flex-col p8",
@@ -91,8 +91,6 @@ pub(super) fn update_console_toggle(
         }
     }
 }
-
-const MAX_HISTORY_LINES: usize = 200;
 
 pub(super) fn update_console_input(
     time: Res<Time>,
@@ -207,72 +205,7 @@ pub(super) fn update_console_input(
 
     // Handle Tab - autocomplete cvar names for setvar/getvar commands
     if input.just_pressed(KeyCode::Tab) {
-        let words: Vec<&str> = console_state.input_text.split_whitespace().collect();
-
-        // Check if first word is setvar or getvar
-        if !words.is_empty() && (words[0] == "setvar" || words[0] == "getvar") {
-            // Check if there's a second word (partial variable name)
-            if words.len() >= 2 && !words[1].is_empty() {
-                let current_word = words[1];
-
-                // Get all the cvars; they are already in alphabetical order
-                let all_cvars = cvars.list();
-
-                let is_exact_match = all_cvars.iter().any(|(name, _)| name == current_word);
-                let matching_cvar: Option<String> = if is_exact_match {
-                    // Current word is exact match - find next cvar in the list
-                    let mut found_current = false;
-                    let mut next_cvar: Option<String> = None;
-
-                    for (name, _) in &all_cvars {
-                        if found_current {
-                            next_cvar = Some(name.clone());
-                            break;
-                        }
-                        if name == current_word {
-                            found_current = true;
-                        }
-                    }
-
-                    // If we didn't find a next one (we were at the end), wrap to first
-                    if next_cvar.is_none() && !all_cvars.is_empty() {
-                        next_cvar = Some(all_cvars[0].0.clone());
-                    }
-
-                    next_cvar
-                } else {
-                    // Not an exact match - find first cvar that starts with this prefix
-                    let mut first_match: Option<String> = None;
-
-                    for (name, _) in &all_cvars {
-                        if name.starts_with(current_word) {
-                            first_match = Some(name.clone());
-                            break;
-                        }
-                    }
-
-                    first_match
-                };
-
-                // If we found a match, replace the partial name with the full name
-                if let Some(full_name) = matching_cvar {
-                    // Reconstruct the command with the completed variable name
-                    let mut new_text = format!("{} {}", words[0], full_name);
-
-                    // If there are more words (like a value for setvar), append them
-                    if words.len() > 2 {
-                        for word in &words[2..] {
-                            new_text.push(' ');
-                            new_text.push_str(word);
-                        }
-                    }
-
-                    console_state.input_text = new_text;
-                    console_state.cursor_position = console_state.input_text.chars().count();
-                    console_state.history_index = None;
-                }
-            }
-        }
+        handle_autocomplete(&mut console_state, &cvars);
     }
 
     // Handle Enter key - submit command
@@ -397,5 +330,223 @@ pub(super) fn update_console_scroll(
     // Auto-scroll to bottom when console is visible
     if let Ok(mut scroll_position) = scroll_query.single_mut() {
         scroll_position.y = f32::MAX; // Scroll to bottom
+    }
+}
+
+//=============================================================================
+// Helper Functions
+//=============================================================================
+
+/// Handle Tab completion for cvar names in setvar/getvar commands
+fn handle_autocomplete(console_state: &mut ConsoleState, cvars: &CVarRegistry) {
+    let words: Vec<&str> = console_state.input_text.split_whitespace().collect();
+
+    // Check if first word is setvar or getvar
+    if words.is_empty() || (words[0] != "setvar" && words[0] != "getvar") {
+        return;
+    }
+
+    // Check if there's a second word (partial variable name)
+    if words.len() < 2 || words[1].is_empty() {
+        return;
+    }
+
+    let current_word = words[1];
+
+    // Get all the cvars; they are already in alphabetical order
+    let all_cvars = cvars.list();
+
+    let is_exact_match = all_cvars.iter().any(|(name, _)| name == current_word);
+    let matching_cvar: Option<String> = if is_exact_match {
+        // Current word is exact match - find next cvar in the list
+        let mut found_current = false;
+        let mut next_cvar: Option<String> = None;
+
+        for (name, _) in &all_cvars {
+            if found_current {
+                next_cvar = Some(name.clone());
+                break;
+            }
+            if name == current_word {
+                found_current = true;
+            }
+        }
+
+        // If we didn't find a next one (we were at the end), wrap to first
+        if next_cvar.is_none() && !all_cvars.is_empty() {
+            next_cvar = Some(all_cvars[0].0.clone());
+        }
+
+        next_cvar
+    } else {
+        // Not an exact match - find first cvar that starts with this prefix
+        let mut first_match: Option<String> = None;
+
+        for (name, _) in &all_cvars {
+            if name.starts_with(current_word) {
+                first_match = Some(name.clone());
+                break;
+            }
+        }
+
+        first_match
+    };
+
+    // If we found a match, replace the partial name with the full name
+    if let Some(full_name) = matching_cvar {
+        // Reconstruct the command with the completed variable name
+        let mut new_text = format!("{} {}", words[0], full_name);
+
+        // If there are more words (like a value for setvar), append them
+        if words.len() > 2 {
+            for word in &words[2..] {
+                new_text.push(' ');
+                new_text.push_str(word);
+            }
+        }
+
+        console_state.input_text = new_text;
+        console_state.cursor_position = console_state.input_text.chars().count();
+        console_state.history_index = None;
+    }
+}
+
+//=============================================================================
+// Tests
+//=============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::scripting::CVarValue;
+
+    #[test]
+    fn test_autocomplete_partial_match() {
+        let mut console_state = ConsoleState::default();
+        let mut cvars = CVarRegistry::default();
+
+        // Add some test cvars
+        cvars.init("player_speed", CVarValue::F32(1.0)).unwrap();
+        cvars.init("player_health", CVarValue::Int32(100)).unwrap();
+        cvars.init("enemy_speed", CVarValue::F32(0.5)).unwrap();
+
+        // Test partial match with "setvar"
+        console_state.input_text = "setvar player".to_string();
+        console_state.cursor_position = console_state.input_text.len();
+
+        handle_autocomplete(&mut console_state, &cvars);
+
+        // Should complete to first matching cvar (alphabetically)
+        assert_eq!(console_state.input_text, "setvar player_health");
+        assert_eq!(
+            console_state.cursor_position,
+            console_state.input_text.len()
+        );
+    }
+
+    #[test]
+    fn test_autocomplete_exact_match_cycles() {
+        let mut console_state = ConsoleState::default();
+        let mut cvars = CVarRegistry::default();
+
+        cvars.init("player_speed", CVarValue::F32(1.0)).unwrap();
+        cvars.init("player_health", CVarValue::Int32(100)).unwrap();
+        cvars.init("enemy_speed", CVarValue::F32(0.5)).unwrap();
+
+        // Start with exact match
+        console_state.input_text = "getvar player_health".to_string();
+        console_state.cursor_position = console_state.input_text.len();
+
+        handle_autocomplete(&mut console_state, &cvars);
+
+        // Should cycle to next cvar starting with "player_"
+        assert_eq!(console_state.input_text, "getvar player_speed");
+    }
+
+    #[test]
+    fn test_autocomplete_wraps_to_first() {
+        let mut console_state = ConsoleState::default();
+        let mut cvars = CVarRegistry::default();
+
+        cvars.init("aaa", CVarValue::Int32(1)).unwrap();
+        cvars.init("bbb", CVarValue::Int32(2)).unwrap();
+        cvars.init("ccc", CVarValue::Int32(3)).unwrap();
+
+        // Start at last cvar
+        console_state.input_text = "setvar ccc".to_string();
+        console_state.cursor_position = console_state.input_text.len();
+
+        handle_autocomplete(&mut console_state, &cvars);
+
+        // Should wrap to first cvar
+        assert_eq!(console_state.input_text, "setvar aaa");
+    }
+
+    #[test]
+    fn test_autocomplete_preserves_value() {
+        let mut console_state = ConsoleState::default();
+        let mut cvars = CVarRegistry::default();
+
+        cvars.init("player_speed", CVarValue::F32(1.0)).unwrap();
+        cvars.init("player_health", CVarValue::Int32(100)).unwrap();
+
+        // Test with value after cvar name
+        console_state.input_text = "setvar player 5.0".to_string();
+        console_state.cursor_position = console_state.input_text.len();
+
+        handle_autocomplete(&mut console_state, &cvars);
+
+        // Should complete cvar name but preserve the value
+        assert_eq!(console_state.input_text, "setvar player_health 5.0");
+    }
+
+    #[test]
+    fn test_autocomplete_no_match() {
+        let mut console_state = ConsoleState::default();
+        let mut cvars = CVarRegistry::default();
+
+        cvars.init("player_speed", CVarValue::F32(1.0)).unwrap();
+
+        // Test with non-matching prefix
+        console_state.input_text = "setvar enemy".to_string();
+        let original_text = console_state.input_text.clone();
+        console_state.cursor_position = console_state.input_text.len();
+
+        handle_autocomplete(&mut console_state, &cvars);
+
+        // Should not change anything
+        assert_eq!(console_state.input_text, original_text);
+    }
+
+    #[test]
+    fn test_autocomplete_ignores_non_setvar_getvar() {
+        let mut console_state = ConsoleState::default();
+        let mut cvars = CVarRegistry::default();
+
+        cvars.init("test_var", CVarValue::Int32(1)).unwrap();
+
+        // Test with different command
+        console_state.input_text = "listvars test".to_string();
+        let original_text = console_state.input_text.clone();
+        console_state.cursor_position = console_state.input_text.len();
+
+        handle_autocomplete(&mut console_state, &cvars);
+
+        // Should not autocomplete for non-setvar/getvar commands
+        assert_eq!(console_state.input_text, original_text);
+    }
+
+    #[test]
+    fn test_autocomplete_empty_input() {
+        let mut console_state = ConsoleState::default();
+        let cvars = CVarRegistry::default();
+
+        console_state.input_text = "".to_string();
+        console_state.cursor_position = 0;
+
+        handle_autocomplete(&mut console_state, &cvars);
+
+        // Should not crash or change anything
+        assert_eq!(console_state.input_text, "");
     }
 }

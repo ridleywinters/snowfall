@@ -8,6 +8,7 @@ use std::path::PathBuf;
 
 use crate::Billboard;
 use crate::actor::{ActorDefinitions, ActorPosition};
+use crate::game_state::GamePlayEntity;
 use crate::item::{Item, ItemDefinitions, ItemPosition};
 use crate::texture_loader::{load_image_texture, load_weapon_texture};
 
@@ -234,7 +235,7 @@ impl Map {
 
         let entity = commands
             .spawn((
-                crate::game_state_systems::GameEntity,
+                GamePlayEntity,
                 Mesh3d(meshes.add(Cuboid::new(GRID_SIZE, GRID_SIZE, wall_height))),
                 MeshMaterial3d(materials.add(StandardMaterial {
                     base_color_texture: Some(texture_handle),
@@ -274,7 +275,7 @@ impl Map {
 
         let entity = commands
             .spawn((
-                crate::game_state_systems::GameEntity,
+                GamePlayEntity,
                 Billboard,
                 Item {
                     interaction_radius: 2.0,
@@ -318,19 +319,25 @@ impl Map {
         let texture_handle = load_weapon_texture(asset_server, &actor_def.sprite);
 
         // Create behavior based on definition
-        let behavior: Option<Box<dyn crate::ai::ActorBehavior>> = match actor_def.behavior.as_str() {
+        let behavior: Option<Box<dyn crate::ai::ActorBehavior>> = match actor_def.behavior.as_str()
+        {
             "wander" => Some(Box::new(crate::ai::wander_behavior::WanderBehavior::new())),
             "stand" => Some(Box::new(crate::ai::stand_behavior::StandBehavior)),
-            "aggressive" => Some(Box::new(crate::ai::aggressive_behavior::AggressiveBehavior::new())),
+            "aggressive" => Some(Box::new(
+                crate::ai::aggressive_behavior::AggressiveBehavior::new(),
+            )),
             _ => {
-                warn!("Unknown behavior type: {}, defaulting to wander", actor_def.behavior);
+                warn!(
+                    "Unknown behavior type: {}, defaulting to wander",
+                    actor_def.behavior
+                );
                 Some(Box::new(crate::ai::wander_behavior::WanderBehavior::new()))
             }
         };
 
         let entity = commands
             .spawn((
-                crate::game_state_systems::GameEntity,
+                GamePlayEntity,
                 Billboard,
                 crate::actor::Actor {
                     actor_type: actor_type.to_string(),
@@ -368,12 +375,15 @@ impl Map {
             if let Err(e) = logging.get_or_create_actor_log(entity, &actor_id) {
                 eprintln!("Failed to create actor log: {}", e);
             } else {
-                logging.write_event(entity, &format!("SPAWN at ({:.1}, {:.1})", world_x, world_y));
+                logging.write_event(
+                    entity,
+                    &format!("SPAWN at ({:.1}, {:.1})", world_x, world_y),
+                );
             }
         }
-        
+
         // Attach ActorLogger component
-        commands.entity(entity).insert(crate::logging::ActorLogger { 
+        commands.entity(entity).insert(crate::logging::ActorLogger {
             actor_id,
             initialized: false,
         });

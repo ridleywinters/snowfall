@@ -1,6 +1,6 @@
-use bevy::prelude::*;
 use crate::game_state::GameState;
 use crate::ui_styles::EntityCommandsUIExt;
+use bevy::prelude::*;
 
 #[derive(Component)]
 pub struct MainMenuUI;
@@ -18,10 +18,7 @@ pub struct RestartButton;
 pub struct QuitButton;
 
 /// Spawn main menu UI
-pub fn spawn_main_menu(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
+pub fn spawn_main_menu(mut commands: Commands) {
     info!("Spawning main menu UI");
     commands
         .spawn(MainMenuUI)
@@ -32,10 +29,11 @@ pub fn spawn_main_menu(
         ])
         .with_children(|parent| {
             // Title
-            parent
-                .spawn_empty()
-                .text("FALLGRAY")
-                .styles(&vec!["font-size-64", "fg-white", "mb-40"]);
+            parent.spawn_empty().text("FALLGRAY").styles(&vec![
+                "font-size-64",
+                "fg-white",
+                "mb-40",
+            ]);
 
             // New Game Button
             parent
@@ -71,10 +69,7 @@ pub fn spawn_main_menu(
 }
 
 /// Spawn game over UI
-pub fn spawn_game_over(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
+pub fn spawn_game_over(mut commands: Commands) {
     info!("Spawning game over UI");
     commands
         .spawn(GameOverUI)
@@ -85,10 +80,11 @@ pub fn spawn_game_over(
         ])
         .with_children(|parent| {
             // Game Over Title
-            parent
-                .spawn_empty()
-                .text("GAME OVER")
-                .styles(&vec!["font-size-64", "fg-rgb(1.0,0.0,0.3)", "mb-40"]);
+            parent.spawn_empty().text("GAME OVER").styles(&vec![
+                "font-size-64",
+                "fg-rgb(1.0,0.0,0.3)",
+                "mb-40",
+            ]);
 
             // Restart Button
             parent
@@ -124,22 +120,22 @@ pub fn spawn_game_over(
 }
 
 /// Cleanup main menu UI
-pub fn cleanup_main_menu(
-    mut commands: Commands,
-    query: Query<Entity, With<MainMenuUI>>,
-) {
-    info!("Cleaning up main menu UI (found {} entities)", query.iter().count());
+pub fn cleanup_main_menu(mut commands: Commands, query: Query<Entity, With<MainMenuUI>>) {
+    info!(
+        "Cleaning up main menu UI (found {} entities)",
+        query.iter().count()
+    );
     for entity in query.iter() {
         commands.entity(entity).despawn();
     }
 }
 
 /// Cleanup game over UI
-pub fn cleanup_game_over(
-    mut commands: Commands,
-    query: Query<Entity, With<GameOverUI>>,
-) {
-    info!("Cleaning up game over UI (found {} entities)", query.iter().count());
+pub fn cleanup_game_over(mut commands: Commands, query: Query<Entity, With<GameOverUI>>) {
+    info!(
+        "Cleaning up game over UI (found {} entities)",
+        query.iter().count()
+    );
     for entity in query.iter() {
         commands.entity(entity).despawn();
     }
@@ -147,10 +143,9 @@ pub fn cleanup_game_over(
 
 /// Handle button interactions
 pub fn handle_menu_buttons(
-    mut interaction_query: Query<&Interaction, (Changed<Interaction>, Or<(With<NewGameButton>, With<RestartButton>, With<QuitButton>)>)>,
-    new_game_query: Query<&Interaction, (With<NewGameButton>, Without<RestartButton>, Without<QuitButton>)>,
-    restart_query: Query<&Interaction, (With<RestartButton>, Without<NewGameButton>, Without<QuitButton>)>,
-    quit_query: Query<&Interaction, (With<QuitButton>, Without<NewGameButton>, Without<RestartButton>)>,
+    new_game_query: Query<&Interaction, (With<NewGameButton>, Changed<Interaction>)>,
+    restart_query: Query<&Interaction, (With<RestartButton>, Changed<Interaction>)>,
+    quit_query: Query<&Interaction, (With<QuitButton>, Changed<Interaction>)>,
     current_state: Res<State<GameState>>,
     mut next_state: ResMut<NextState<GameState>>,
     mut exit: MessageWriter<bevy::app::AppExit>,

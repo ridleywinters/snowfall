@@ -136,13 +136,13 @@ impl ActorBehavior for WanderBehavior {
                             *current_index = 0;
                         } else {
                             // Pathfinding failed, go to waiting/planning
-                            let mut rng = rand::thread_rng();
-                            if rng.gen_bool(0.7) {
+                            let mut rng = rand::rng();
+                            if rng.random_bool(0.7) {
                                 self.state = WanderState::Planning;
                             } else {
                                 self.state = WanderState::Waiting {
                                     timer: 0.0,
-                                    duration: rng.gen_range(1.0..3.0),
+                                    duration: rng.random_range(1.0..3.0),
                                 };
                             }
                         }

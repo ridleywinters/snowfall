@@ -11,12 +11,11 @@ use bevy::prelude::*;
 use rand::Rng;
 
 use super::player::Player;
-use crate::game_state::GameState;
+use crate::game_state::*;
 
 //=============================================================================
 // Player Light Plugin
 //=============================================================================
-
 
 /// Encapsulates the player light functionality
 pub struct PlayerLightPlugin;
@@ -118,7 +117,7 @@ fn update_player_light_animation(
 pub fn spawn_player_lights(commands: &mut Commands, position: Vec3) {
     // Add a point light that follows the player
     commands.spawn((
-        crate::game_state_systems::GameEntity,
+        GamePlayEntity,
         PointLight {
             color: Color::WHITE,
             intensity: 1000000.0,
@@ -132,7 +131,7 @@ pub fn spawn_player_lights(commands: &mut Commands, position: Vec3) {
 
     // Add a second point light that follows the player with no Y offset
     commands.spawn((
-        crate::game_state_systems::GameEntity,
+        GamePlayEntity,
         PointLight {
             color: Color::WHITE,
             intensity: 1000000.0,

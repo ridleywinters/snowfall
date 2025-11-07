@@ -7,4 +7,4 @@
 ## Guidelines
 
 - Sprites SHOULD BE rendered WITH lighting
-- Helper functions should be defined after public functions in the same file
+- Helper functions should be defined at the bottom of the file after all public functions in the same file

@@ -8,3 +8,7 @@ pub enum GameState {
     Playing,
     GameOver,
 }
+
+/// Marker for entities that should be cleaned up when leaving Playing state
+#[derive(Component)]
+pub struct GamePlayEntity;

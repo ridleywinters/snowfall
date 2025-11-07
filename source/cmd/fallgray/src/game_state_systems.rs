@@ -1,8 +1,8 @@
+use crate::camera::{Health, MouseLookSettings};
+use crate::game_state::*;
+use crate::logging::{ActorLogger, ActorLoggingSystem};
 use bevy::prelude::*;
 use bevy::window::{CursorGrabMode, CursorOptions, PrimaryWindow};
-use crate::camera::{Health, MouseLookSettings};
-use crate::game_state::GameState;
-use crate::logging::{ActorLogger, ActorLoggingSystem};
 
 /// System to initialize actor logs after startup
 pub fn initialize_actor_logs(
@@ -17,7 +17,10 @@ pub fn initialize_actor_logs(
             } else {
                 logging_system.write_event(
                     entity,
-                    &format!("SPAWN at ({:.1}, {:.1})", transform.translation.x, transform.translation.y)
+                    &format!(
+                        "SPAWN at ({:.1}, {:.1})",
+                        transform.translation.x, transform.translation.y
+                    ),
                 );
                 // Immediately flush after writing spawn event
                 logging_system.flush_all();
@@ -28,19 +31,14 @@ pub fn initialize_actor_logs(
 }
 
 /// Periodically flush actor logs to ensure data is written
-pub fn periodic_flush_actor_logs(
-    mut logging_system: ResMut<ActorLoggingSystem>,
-    time: Res<Time>,
-) {
+pub fn periodic_flush_actor_logs(mut logging_system: ResMut<ActorLoggingSystem>) {
     // Flush every frame to ensure logs are written immediately
     // BufWriter still provides buffering, but we ensure data persistence
     logging_system.flush_all();
 }
 
 /// Clean up actor logging when exiting Playing state
-pub fn cleanup_actor_logging(
-    mut logging_system: ResMut<ActorLoggingSystem>,
-) {
+pub fn cleanup_actor_logging(mut logging_system: ResMut<ActorLoggingSystem>) {
     info!("Flushing and closing all actor logs");
     logging_system.flush_all();
     logging_system.close_all();
@@ -64,16 +62,15 @@ pub fn detect_player_death(
     }
 }
 
-/// Marker for entities that should be cleaned up when leaving Playing state
-#[derive(Component)]
-pub struct GameEntity;
-
 /// Clean up game entities when leaving Playing state
 pub fn cleanup_game_entities(
     mut commands: Commands,
-    entities: Query<Entity, With<GameEntity>>,
+    entities: Query<Entity, With<GamePlayEntity>>,
 ) {
-    info!("Cleaning up game entities (found {} entities)", entities.iter().count());
+    info!(
+        "Cleaning up game entities (found {} entities)",
+        entities.iter().count()
+    );
     for entity in entities.iter() {
         commands.entity(entity).despawn();
     }
@@ -86,7 +83,7 @@ pub fn unlock_cursor_on_menu(
 ) {
     // Unlock cursor and make it visible
     mouse_look.cursor_locked = false;
-    
+
     if let Ok(mut cursor) = cursor_query.single_mut() {
         cursor.grab_mode = CursorGrabMode::None;
         cursor.visible = true;

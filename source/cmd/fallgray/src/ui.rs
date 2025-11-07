@@ -1,5 +1,5 @@
 use crate::camera::{Health, Player};
-use crate::game_state_systems::GameEntity;
+use crate::game_state::GamePlayEntity;
 use crate::texture_loader::load_image_texture;
 use crate::ui_styles::EntityCommandsUIExt;
 use bevy::prelude::*;
@@ -50,7 +50,7 @@ pub fn startup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     // Status bars at bottom left
     commands
-        .spawn(GameEntity)
+        .spawn(GamePlayEntity)
         .styles(&vec![
             "absolute width-100% height-100% p8",
             "justify-start align-end",
@@ -105,7 +105,7 @@ pub fn startup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     // Gold text (keeping at top for now)
     commands
-        .spawn(GameEntity)
+        .spawn(GamePlayEntity)
         .style("width-100% height-100% justify-start align-start p20 absolute")
         .with_children(|parent| {
             parent

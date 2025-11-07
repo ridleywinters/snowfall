@@ -1,4 +1,5 @@
 use crate::console::ConsoleState;
+use crate::game_state::GamePlayEntity;
 use crate::game_state::GameState;
 use crate::texture_loader::load_image_texture;
 use crate::ui_styles::EntityCommandsUIExt;
@@ -35,7 +36,8 @@ impl Plugin for ToolbarPlugin {
                     update_toolbar_ui,
                     update_toolbar_input,
                     update_toolbar_click,
-                ).run_if(in_state(GameState::Playing)),
+                )
+                    .run_if(in_state(GameState::Playing)),
             );
     }
 }
@@ -66,7 +68,7 @@ fn startup_toolbar(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     // Toolbar at the bottom center
     commands
-        .spawn(crate::game_state_systems::GameEntity)
+        .spawn(GamePlayEntity)
         .style("width-100% height-100% justify-center align-end p8 absolute")
         .with_children(|parent| {
             // Toolbar container with interaction area and margin

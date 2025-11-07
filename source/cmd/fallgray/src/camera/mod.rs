@@ -6,7 +6,6 @@ mod player_light;
 mod systems;
 
 pub use camera_plugin::CameraPlugin;
-pub use cursor_toggle::*;
 pub use mouse_look_settings::MouseLookSettings;
 pub use player::{Health, Player};
 pub use player_light::{PlayerLightPlugin, spawn_player_lights};
