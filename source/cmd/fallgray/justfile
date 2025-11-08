@@ -1,7 +1,6 @@
 import "../../common/common.justfile"
 
-ensure:
-    @just ensure-vscode-directory
+ensure: ensure-build-directory
     @cd ${REPO_ROOT}/source/assets && just build
 
 build: ensure

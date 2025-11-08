@@ -1,3 +1,5 @@
-.vscode/
-target/
-/logs
+/.vscode
+/build
+/target
+.vscode/settings.json
+fallgray.code-workspace
