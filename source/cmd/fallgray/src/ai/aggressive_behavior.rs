@@ -222,7 +222,6 @@ impl ActorBehavior for AggressiveBehavior {
         speed_multiplier: f32,
         player_position: Option<Vec2>,
         actor: &crate::ai::ActorData,
-        mut logging: Option<&mut crate::ai::BehaviorLoggingContext>,
     ) -> bool {
         let actor_pos = Vec2::new(transform.translation.x, transform.translation.y);
         let mut is_moving = false;
@@ -259,13 +258,6 @@ impl ActorBehavior for AggressiveBehavior {
                         player_pos.x,
                         player_pos.y,
                     ) {
-                        if let Some(ref mut log_ctx) = logging {
-                            log_ctx.logging_system.write_event(
-                                log_ctx.entity,
-                                &format!("STATE_CHANGE: Wandering -> Chasing | distance={:.1} | player_pos=({:.1}, {:.1})",
-                                    actor_pos.distance(player_pos), player_pos.x, player_pos.y)
-                            );
-                        }
                         self.state = AggressiveState::Chasing {
                             path,
                             current_index: 0,
@@ -293,13 +285,6 @@ impl ActorBehavior for AggressiveBehavior {
 
                 // Check if player escaped
                 if !Self::in_chase_range(actor_pos, player_pos) {
-                    if let Some(ref mut log_ctx) = logging {
-                        log_ctx.logging_system.write_event(
-                            log_ctx.entity,
-                            &format!("STATE_CHANGE: Chasing -> Wandering | reason=player_escaped | distance={:.1}",
-                                actor_pos.distance(player_pos))
-                        );
-                    }
                     self.state = AggressiveState::Wandering {
                         wander_state: WanderSubState::Planning,
                     };
@@ -308,13 +293,6 @@ impl ActorBehavior for AggressiveBehavior {
 
                 // Check if we should enter attack range
                 if Self::in_attack_range(actor_pos, player_pos, actor.attack_range) {
-                    if let Some(ref mut log_ctx) = logging {
-                        log_ctx.logging_system.write_event(
-                            log_ctx.entity,
-                            &format!("STATE_CHANGE: Chasing -> Attacking | distance={:.1} | player_pos=({:.1}, {:.1})",
-                                actor_pos.distance(player_pos), player_pos.x, player_pos.y)
-                        );
-                    }
                     self.state = AggressiveState::Attacking {
                         timer: 0.0,
                         has_dealt_damage: false,
@@ -389,12 +367,6 @@ impl ActorBehavior for AggressiveBehavior {
                             *current_index = 0;
                         } else {
                             // Can't find path, go back to wandering
-                            if let Some(ref mut log_ctx) = logging {
-                                log_ctx.logging_system.write_event(
-                                    log_ctx.entity,
-                                    "STATE_CHANGE: Chasing -> Wandering | reason=no_path_found"
-                                );
-                            }
                             self.state = AggressiveState::Wandering {
                                 wander_state: WanderSubState::Planning,
                             };
@@ -448,13 +420,6 @@ impl ActorBehavior for AggressiveBehavior {
                                 player_pos.x,
                                 player_pos.y,
                             ) {
-                                if let Some(ref mut log_ctx) = logging {
-                                    log_ctx.logging_system.write_event(
-                                        log_ctx.entity,
-                                        &format!("STATE_CHANGE: Attacking -> Chasing | reason=out_of_buffered_range | distance={:.1}",
-                                            actor_pos.distance(player_pos))
-                                    );
-                                }
                                 self.state = AggressiveState::Chasing {
                                     path,
                                     current_index: 0,
@@ -463,13 +428,6 @@ impl ActorBehavior for AggressiveBehavior {
                             }
                         } else {
                             // Player escaped, return to wandering
-                            if let Some(ref mut log_ctx) = logging {
-                                log_ctx.logging_system.write_event(
-                                    log_ctx.entity,
-                                    &format!("STATE_CHANGE: Attacking -> Wandering | reason=player_escaped | distance={:.1}",
-                                        actor_pos.distance(player_pos))
-                                );
-                            }
                             self.state = AggressiveState::Wandering {
                                 wander_state: WanderSubState::Planning,
                             };

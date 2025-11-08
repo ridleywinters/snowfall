@@ -1,4 +1,4 @@
-use crate::camera::{Health, Player};
+use crate::camera::Player;
 use crate::game_state::GamePlayEntity;
 use crate::texture_loader::load_image_texture;
 use crate::ui_styles::EntityCommandsUIExt;
@@ -116,15 +116,15 @@ pub fn startup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
 }
 
 pub fn update_ui(
-    player_query: Query<&Health, With<Player>>,
+    player_query: Query<&Player>,
     mut stats: ResMut<PlayerStats>,
     mut health_query: Query<&mut Node, (With<HealthBar>, Without<FatigueBar>)>,
     mut fatigue_query: Query<&mut Node, (With<FatigueBar>, Without<HealthBar>)>,
     mut gold_query: Query<&mut Text, With<GoldText>>,
 ) {
-    // Sync Health component to PlayerStats
-    if let Ok(health) = player_query.single() {
-        stats.health = (health.current / health.max * 100.0).clamp(0.0, 100.0);
+    // Sync Player health to PlayerStats
+    if let Ok(player) = player_query.single() {
+        stats.health = (player.current_health / player.max_health * 100.0).clamp(0.0, 100.0);
     }
 
     // Update health bar width

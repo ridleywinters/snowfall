@@ -8,6 +8,12 @@ use bevy::prelude::*;
 #[derive(Resource)]
 pub struct MouseLookSettings {
     /// Whether the cursor is currently locked for FPS controls
+    ///
+    /// NOTE: this is a bit confusing as this is a "should_cursor_be_locked" in some
+    /// cases such as when the console is opened. When the console is opened, the
+    /// cursor will be unlocked regardless of this setting -- but then this flag will
+    /// be used to restore the cursor lock state when the console is closed.  There's
+    /// probably a better way to handle this.
     pub cursor_locked: bool,
 
     /// Decay factor for smooth mouse (0.0-1.0, lower = more smoothing)

@@ -34,30 +34,30 @@ impl CombatAudio {
             critical_sound: Some(asset_server.load("base/sounds/critical1.ogg")),
         }
     }
+
+    /// Play a swing sound effect
+    pub fn play_swing_sound(&self, commands: &mut Commands) {
+        if let Some(sound) = &self.swing_sound {
+            commands.spawn((AudioPlayer::new(sound.clone()), PlaybackSettings::DESPAWN));
+        }
+    }
+
+    /// Play a hit sound effect
+    pub fn play_hit_sound(&self, commands: &mut Commands, critical: bool) {
+        let sound = if critical {
+            &self.critical_sound
+        } else {
+            &self.hit_sound
+        };
+
+        if let Some(sound) = sound {
+            commands.spawn((AudioPlayer::new(sound.clone()), PlaybackSettings::DESPAWN));
+        }
+    }
 }
 
 impl Default for CombatAudio {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-/// Play a swing sound effect
-pub fn play_swing_sound(commands: &mut Commands, combat_audio: &Res<CombatAudio>) {
-    if let Some(sound) = &combat_audio.swing_sound {
-        commands.spawn((AudioPlayer::new(sound.clone()), PlaybackSettings::DESPAWN));
-    }
-}
-
-/// Play a hit sound effect
-pub fn play_hit_sound(commands: &mut Commands, combat_audio: &Res<CombatAudio>, critical: bool) {
-    let sound = if critical {
-        &combat_audio.critical_sound
-    } else {
-        &combat_audio.hit_sound
-    };
-
-    if let Some(sound) = sound {
-        commands.spawn((AudioPlayer::new(sound.clone()), PlaybackSettings::DESPAWN));
     }
 }

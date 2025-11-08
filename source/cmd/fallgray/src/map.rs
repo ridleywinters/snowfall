@@ -6,10 +6,12 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
-use crate::Billboard;
+pub mod editor;
+
 use crate::actor::{ActorDefinitions, ActorPosition};
 use crate::game_state::GamePlayEntity;
 use crate::item::{Item, ItemDefinitions, ItemPosition};
+use crate::rendering::Billboard;
 use crate::texture_loader::{load_image_texture, load_weapon_texture};
 
 /// Grid size for walls (8×8 grid)
@@ -166,7 +168,6 @@ impl Map {
                 actor_pos.x as f32,
                 actor_pos.y as f32,
                 &actor_pos.actor_type,
-                None, // Logging system initialized after map load
             );
         }
 
@@ -308,7 +309,6 @@ impl Map {
         world_x: f32,
         world_y: f32,
         actor_type: &str,
-        logging_system: Option<&mut crate::logging::ActorLoggingSystem>,
     ) {
         let Some(actor_def) = actor_defs.actors.get(actor_type) else {
             warn!("Unknown actor type: {}", actor_type);
@@ -368,25 +368,6 @@ impl Map {
                 Transform::from_translation(world_pos),
             ))
             .id();
-
-        // Create logger for this actor
-        let actor_id = format!("{}_{:04}", actor_type, entity.index());
-        if let Some(logging) = logging_system {
-            if let Err(e) = logging.get_or_create_actor_log(entity, &actor_id) {
-                eprintln!("Failed to create actor log: {}", e);
-            } else {
-                logging.write_event(
-                    entity,
-                    &format!("SPAWN at ({:.1}, {:.1})", world_x, world_y),
-                );
-            }
-        }
-
-        // Attach ActorLogger component
-        commands.entity(entity).insert(crate::logging::ActorLogger {
-            actor_id,
-            initialized: false,
-        });
 
         // Track entity
         self.actors.insert(

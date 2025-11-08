@@ -11,19 +11,8 @@ impl Plugin for GameStatePlugin {
             // Main Menu systems
             .add_systems(OnEnter(GameState::MainMenu), unlock_cursor_on_menu)
             // Playing state systems
-            .add_systems(
-                Update,
-                (
-                    detect_player_death,
-                    initialize_actor_logs,
-                    periodic_flush_actor_logs,
-                )
-                    .run_if(in_state(GameState::Playing)),
-            )
-            .add_systems(
-                OnExit(GameState::Playing),
-                (cleanup_actor_logging, cleanup_game_entities),
-            )
+            .add_systems(Update, detect_player_death.run_if(in_state(GameState::Playing)))
+            .add_systems(OnExit(GameState::Playing), cleanup_game_entities)
             // Game Over systems
             .add_systems(OnEnter(GameState::GameOver), unlock_cursor_on_menu);
     }

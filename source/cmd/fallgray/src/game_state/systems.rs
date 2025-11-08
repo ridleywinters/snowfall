@@ -1,54 +1,13 @@
 use bevy::prelude::*;
 use bevy::window::{CursorGrabMode, CursorOptions, PrimaryWindow};
 
-use crate::camera::{Health, MouseLookSettings};
-use crate::logging::{ActorLogger, ActorLoggingSystem};
+use crate::camera::{MouseLookSettings, Player};
 
 use super::states::*;
 
-/// System to initialize actor logs after startup
-pub fn initialize_actor_logs(
-    mut logging_system: ResMut<ActorLoggingSystem>,
-    mut actors_query: Query<(Entity, &mut ActorLogger, &Transform), With<crate::actor::Actor>>,
-) {
-    // Initialize logs for actors that haven't been initialized yet
-    for (entity, mut logger, transform) in actors_query.iter_mut() {
-        if !logger.initialized {
-            if let Err(e) = logging_system.get_or_create_actor_log(entity, &logger.actor_id) {
-                eprintln!("Failed to create actor log: {}", e);
-            } else {
-                logging_system.write_event(
-                    entity,
-                    &format!(
-                        "SPAWN at ({:.1}, {:.1})",
-                        transform.translation.x, transform.translation.y
-                    ),
-                );
-                // Immediately flush after writing spawn event
-                logging_system.flush_all();
-                logger.initialized = true;
-            }
-        }
-    }
-}
-
-/// Periodically flush actor logs to ensure data is written
-pub fn periodic_flush_actor_logs(mut logging_system: ResMut<ActorLoggingSystem>) {
-    // Flush every frame to ensure logs are written immediately
-    // BufWriter still provides buffering, but we ensure data persistence
-    logging_system.flush_all();
-}
-
-/// Clean up actor logging when exiting Playing state
-pub fn cleanup_actor_logging(mut logging_system: ResMut<ActorLoggingSystem>) {
-    info!("Flushing and closing all actor logs");
-    logging_system.flush_all();
-    logging_system.close_all();
-}
-
 /// System to detect player death and transition to game over
 pub fn detect_player_death(
-    player_query: Query<&Health, With<crate::camera::Player>>,
+    player_query: Query<&Player>,
     current_state: Res<State<GameState>>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
@@ -56,8 +15,8 @@ pub fn detect_player_death(
         return;
     }
 
-    if let Ok(health) = player_query.single() {
-        if !health.is_alive() {
+    if let Ok(player) = player_query.single() {
+        if !player.is_alive() {
             info!("Player died! Transitioning to GameOver state");
             next_state.set(GameState::GameOver);
         }

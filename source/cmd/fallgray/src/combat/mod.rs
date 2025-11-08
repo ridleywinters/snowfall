@@ -4,7 +4,7 @@ pub mod actor_attack;
 /// Handles weapon attacks, damage calculation, and combat states.
 /// Organized into submodules for clarity and maintainability.
 pub mod attack_state;
-pub mod audio_feedback;
+pub mod combat_audio;
 pub mod damage;
 pub mod status_effects;
 pub mod visual_feedback;
@@ -14,7 +14,7 @@ pub use actor_attack::{
     handle_actor_hit, update_actor_attack_animation, update_actor_attacks, update_actor_stun,
 };
 pub use attack_state::{AttackState, CombatInput, StateTransition};
-pub use audio_feedback::{CombatAudio, play_hit_sound, play_swing_sound};
+pub use combat_audio::CombatAudio;
 pub use damage::calculate_damage;
 pub use status_effects::{apply_status_effect, update_status_effects};
 pub use visual_feedback::{

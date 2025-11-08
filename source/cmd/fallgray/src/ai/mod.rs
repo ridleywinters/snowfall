@@ -17,12 +17,6 @@ pub struct ActorData {
     pub attack_range: f32,
 }
 
-/// Logging context for behaviors
-pub struct BehaviorLoggingContext<'a> {
-    pub entity: Entity,
-    pub logging_system: &'a mut crate::logging::ActorLoggingSystem,
-}
-
 /// Trait for defining actor behaviors
 pub trait ActorBehavior: Send + Sync {
     /// Update the behavior for the current frame
@@ -35,7 +29,6 @@ pub trait ActorBehavior: Send + Sync {
         speed_multiplier: f32,
         player_position: Option<Vec2>,
         actor: &ActorData,
-        logging: Option<&mut BehaviorLoggingContext>,
     ) -> bool;
 
     /// Get the behavior label

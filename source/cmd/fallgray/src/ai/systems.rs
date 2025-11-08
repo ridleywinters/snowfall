@@ -32,7 +32,6 @@ fn update_actor_behavior(
     player_query: Query<&Transform, With<crate::camera::Player>>,
     map: Res<Map>,
     time: Res<Time>,
-    mut logging_system: Option<ResMut<crate::logging::ActorLoggingSystem>>,
 ) {
     // Get player position if available
     let player_position = player_query
@@ -40,7 +39,7 @@ fn update_actor_behavior(
         .ok()
         .map(|t| Vec2::new(t.translation.x, t.translation.y));
 
-    for (entity, mut actor, mut transform) in actors.iter_mut() {
+    for (_entity, mut actor, mut transform) in actors.iter_mut() {
         let speed = actor.speed_multiplier;
         // Extract necessary actor data before borrowing behavior mutably
         let actor_data = crate::ai::ActorData {
@@ -49,15 +48,6 @@ fn update_actor_behavior(
         };
 
         if let Some(ref mut behavior) = actor.behavior {
-            // Create logging context if available
-            let mut logging_context =
-                logging_system
-                    .as_deref_mut()
-                    .map(|logging| crate::ai::BehaviorLoggingContext {
-                        entity,
-                        logging_system: logging,
-                    });
-
             let is_moving = behavior.update(
                 &mut transform,
                 &map,
@@ -65,7 +55,6 @@ fn update_actor_behavior(
                 speed,
                 player_position,
                 &actor_data,
-                logging_context.as_mut(),
             );
             actor.is_moving = is_moving;
         }

@@ -8,29 +8,33 @@ pub struct Player {
     /// Accumulators for smooth mouse movement
     pub yaw_velocity: f32,
     pub pitch_velocity: f32,
+
+    /// Current health
+    pub current_health: f32,
+    /// Maximum health
+    pub max_health: f32,
 }
 
-/// Health component for player
-#[derive(Component)]
-pub struct Health {
-    pub current: f32,
-    pub max: f32,
-}
-
-impl Health {
-    pub fn new(max: f32) -> Self {
-        Self { current: max, max }
+impl Player {
+    pub fn new(speed: f32, max_health: f32) -> Self {
+        Self {
+            speed,
+            yaw_velocity: 0.0,
+            pitch_velocity: 0.0,
+            current_health: max_health,
+            max_health,
+        }
     }
-    
+
     pub fn is_alive(&self) -> bool {
-        self.current > 0.0
+        self.current_health > 0.0
     }
-    
+
     pub fn take_damage(&mut self, amount: f32) {
-        self.current = (self.current - amount).max(0.0);
+        self.current_health = (self.current_health - amount).max(0.0);
     }
-    
+
     pub fn heal(&mut self, amount: f32) {
-        self.current = (self.current + amount).min(self.max);
+        self.current_health = (self.current_health + amount).min(self.max_health);
     }
 }

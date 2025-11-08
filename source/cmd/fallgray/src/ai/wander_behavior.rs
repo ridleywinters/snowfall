@@ -44,7 +44,6 @@ impl ActorBehavior for WanderBehavior {
         speed_multiplier: f32,
         _player_position: Option<Vec2>,
         _actor: &crate::ai::ActorData,
-        _logging: Option<&mut crate::ai::BehaviorLoggingContext>,
     ) -> bool {
         let mut is_moving = false;
 

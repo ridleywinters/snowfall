@@ -1,5 +1,5 @@
 use super::mouse_look_settings::MouseLookSettings;
-use super::player::{Health, Player};
+use super::player::Player;
 use crate::collision::PLAYER_RADIUS;
 use crate::console::ConsoleState;
 use crate::game_state::GamePlayEntity;
@@ -24,6 +24,16 @@ pub fn update_camera_control_system(
         return;
     }
 
+    // Grab the relevant console variables
+    let arrow_sensitivity = cvars.get_f32("arrow_sensitivity");
+    let smooth_enabled = cvars.get_bool("mouse.smooth");
+    let mouse_sensitivity = cvars.get_f32("mouse.sensitivity");
+    let invert_factor = if cvars.get_bool("mouse.invert_y") {
+        1.0
+    } else {
+        -1.0
+    };
+
     for (mut transform, mut player) in query.iter_mut() {
         let dt = time.delta_secs();
 
@@ -32,23 +42,12 @@ pub fn update_camera_control_system(
         let can_mouse_look = mouse_look.cursor_locked && !console_state.visible && !ui_hovered;
 
         if can_mouse_look {
-            // Read mouse sensitivity from CVar
-            let mouse_sensitivity = cvars.get_f32("mouse.sensitivity");
-
-            // Read invert_y setting from CVar
-            let invert_y = cvars.get_bool("mouse.invert_y");
-            let invert_factor = if invert_y { 1.0 } else { -1.0 };
-
-            // Check if smooth mouse is enabled via CVar
-            let smooth_enabled = cvars.get_bool("mouse.smooth");
-
             // Accumulate mouse motion
             for event in mouse_motion.read() {
                 let yaw_input = -event.delta.x * mouse_sensitivity;
                 let pitch_input = -event.delta.y * mouse_sensitivity * invert_factor;
 
                 if smooth_enabled {
-                    // Add to velocity accumulators for smooth mode
                     player.yaw_velocity += yaw_input;
                     player.pitch_velocity += pitch_input;
                 } else {
@@ -95,7 +94,7 @@ pub fn update_camera_control_system(
         // Arrow left/right rotates around Z axis (yaw)
         // Arrow up/down changes pitch (looking up/down)
         // Read arrow sensitivity from CVar
-        let arrow_sensitivity = cvars.get_f32("arrow_sensitivity");
+
         let mut yaw_delta = 0.0;
         let mut pitch_delta = 0.0;
 
@@ -126,21 +125,11 @@ pub fn update_camera_control_system(
             let forward_xy = Vec2::new(forward_3d.x, forward_3d.y);
             let yaw = forward_xy.y.atan2(forward_xy.x);
 
-            let snap_increment = std::f32::consts::PI / 4.0;
-            let mut yaw_snap = (yaw / snap_increment).round() * snap_increment;
-
-            if yaw_delta < 0.0 && yaw_snap > yaw {
-                yaw_snap -= snap_increment;
-            } else if yaw_delta > 0.0 && yaw_snap < yaw {
-                yaw_snap += snap_increment;
-            }
-
             let max = scale * arrow_sensitivity * dt;
-            yaw_delta += (yaw_snap - yaw).clamp(-max, max);
+            yaw_delta += (-yaw).clamp(-max, max);
         }
 
         // Apply smooth mouse rotation (velocity-based)
-        let smooth_enabled = cvars.get_bool("mouse.smooth");
         if smooth_enabled {
             let dt_factor = dt * 60.0; // Frame-rate independence (60 FPS baseline)
 
@@ -236,12 +225,7 @@ pub fn spawn_camera(commands: &mut Commands, position: Vec3) -> Entity {
                 Vec3::new(position.x - 1.0, position.y, position.z * 1.01),
                 Vec3::Z,
             ),
-            Player {
-                speed: 32.0,
-                yaw_velocity: 0.0,
-                pitch_velocity: 0.0,
-            },
-            Health::new(100.0),
+            Player::new(32.0, 100.0),
         ))
         .id()
 }

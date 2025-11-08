@@ -68,10 +68,8 @@ pub fn update_camera_shake(
         let shake_y = (elapsed * shake.frequency * 1.3).cos() * shake.intensity * 0.7;
         let shake_z = (elapsed * shake.frequency * 0.8).sin() * shake.intensity * 0.5;
 
-        // Set position to base + shake offset
+        // Update
         transform.translation = shake.base_position + Vec3::new(shake_x, shake_y, shake_z);
-
-        // Decrease duration
         shake.duration -= time.delta_secs();
     }
 

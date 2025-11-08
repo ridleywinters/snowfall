@@ -1,6 +1,6 @@
-use bevy::prelude::*;
 use crate::actor::{Actor, ActorAttackState};
-use crate::camera::Health;
+use crate::camera::Player;
+use bevy::prelude::*;
 
 // Attack animation timing
 const WINDUP_DURATION: f32 = 0.2;
@@ -14,7 +14,7 @@ const DAMAGE_TIMING: f32 = WINDUP_DURATION + STRIKE_DURATION * 0.5;
 /// System to handle actor attacks on player
 pub fn update_actor_attacks(
     mut actors: Query<(&mut Actor, &Transform)>,
-    mut player_query: Query<(&mut Health, &Transform), With<crate::camera::Player>>,
+    mut player_query: Query<(&mut Player, &Transform)>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     combat_audio: Res<crate::combat::CombatAudio>,
@@ -22,11 +22,14 @@ pub fn update_actor_attacks(
     mut materials: ResMut<Assets<StandardMaterial>>,
     time: Res<Time>,
 ) {
-    let Ok((mut player_health, player_transform)) = player_query.single_mut() else {
+    let Ok((mut player, player_transform)) = player_query.single_mut() else {
         return;
     };
 
-    let player_pos = Vec2::new(player_transform.translation.x, player_transform.translation.y);
+    let player_pos = Vec2::new(
+        player_transform.translation.x,
+        player_transform.translation.y,
+    );
 
     for (mut actor, actor_transform) in actors.iter_mut() {
         // Skip if actor is stunned
@@ -47,7 +50,7 @@ pub fn update_actor_attacks(
                 if distance <= actor.attack_range && actor.attack_timer >= actor.attack_cooldown {
                     actor.attack_state = ActorAttackState::WindingUp;
                     actor.attack_timer = 0.0;
-                    
+
                     // Play swing sound
                     play_actor_swing_sound(&mut commands, &combat_audio);
                 }
@@ -61,11 +64,13 @@ pub fn update_actor_attacks(
 
             ActorAttackState::Striking => {
                 // Deal damage at precise timing
-                if actor.attack_timer >= DAMAGE_TIMING && actor.attack_timer < DAMAGE_TIMING + time.delta_secs() {
+                if actor.attack_timer >= DAMAGE_TIMING
+                    && actor.attack_timer < DAMAGE_TIMING + time.delta_secs()
+                {
                     // Check if still in range
                     if distance <= actor.attack_range {
-                        player_health.take_damage(actor.attack_damage as f32);
-                        
+                        player.take_damage(actor.attack_damage as f32);
+
                         // Spawn visual/audio feedback
                         crate::combat::spawn_damage_number(
                             &mut commands,
@@ -74,7 +79,7 @@ pub fn update_actor_attacks(
                             actor.attack_damage,
                             false, // Not a crit
                         );
-                        
+
                         crate::combat::spawn_blood_particles(
                             &mut commands,
                             &mut meshes,
@@ -82,8 +87,8 @@ pub fn update_actor_attacks(
                             player_transform.translation,
                             5,
                         );
-                        
-                        crate::combat::play_hit_sound(&mut commands, &combat_audio, false);
+
+                        combat_audio.play_hit_sound(&mut commands, false);
                     }
                 }
 
@@ -103,10 +108,7 @@ pub fn update_actor_attacks(
 }
 
 /// System to handle actor stun when damaged
-pub fn update_actor_stun(
-    mut actors: Query<&mut Actor>,
-    time: Res<Time>,
-) {
+pub fn update_actor_stun(mut actors: Query<&mut Actor>, time: Res<Time>) {
     for mut actor in actors.iter_mut() {
         if actor.stun_timer > 0.0 {
             actor.stun_timer -= time.delta_secs();
@@ -122,7 +124,7 @@ pub fn update_actor_stun(
 pub fn handle_actor_hit(actor: &mut Actor) {
     const STUN_DURATION: f32 = 0.3;
     actor.stun_timer = STUN_DURATION;
-    
+
     // Reset attack state if in middle of attacking
     if actor.attack_state != ActorAttackState::Idle {
         actor.attack_state = ActorAttackState::Idle;
@@ -146,7 +148,8 @@ pub fn update_actor_attack_animation(
                     ((actor.attack_timer - WINDUP_DURATION) / STRIKE_DURATION).clamp(0.0, 1.0)
                 }
                 ActorAttackState::Recovering => {
-                    ((actor.attack_timer - WINDUP_DURATION - STRIKE_DURATION) / RECOVERY_DURATION).clamp(0.0, 1.0)
+                    ((actor.attack_timer - WINDUP_DURATION - STRIKE_DURATION) / RECOVERY_DURATION)
+                        .clamp(0.0, 1.0)
                 }
                 ActorAttackState::Idle => 0.0,
             };
@@ -192,9 +195,6 @@ pub fn update_actor_attack_animation(
 /// Play random actor swing sound (reuses player sword sounds for now)
 fn play_actor_swing_sound(commands: &mut Commands, combat_audio: &crate::combat::CombatAudio) {
     if let Some(sound) = &combat_audio.swing_sound {
-        commands.spawn((
-            AudioPlayer::new(sound.clone()),
-            PlaybackSettings::DESPAWN,
-        ));
+        commands.spawn((AudioPlayer::new(sound.clone()), PlaybackSettings::DESPAWN));
     }
 }

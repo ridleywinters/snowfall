@@ -15,7 +15,6 @@ pub fn toggle_cursor_lock(
     mut cursor_query: Query<&mut CursorOptions, With<PrimaryWindow>>,
     console_state: Res<ConsoleState>,
 ) {
-    // Don't toggle if console is open (console handles its own cursor state)
     if console_state.visible {
         return;
     }
