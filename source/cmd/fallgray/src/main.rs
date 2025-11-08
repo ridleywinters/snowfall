@@ -18,7 +18,7 @@ use camera::{CameraPlugin, Player, PlayerLightPlugin, update_camera_shake};
 use combat::{update_blood_particles, update_damage_numbers, update_status_effects};
 use console::*;
 use game_state::{GamePlayEntity, GameState, GameStatePlugin};
-use hud::{startup_ui, update_ui, Toolbar};
+use hud::{Toolbar, startup_ui, update_ui};
 use item::ItemPlugin;
 use menu::MenuPlugin;
 use rendering::update_billboards;

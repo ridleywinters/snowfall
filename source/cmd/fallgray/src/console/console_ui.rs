@@ -1,8 +1,8 @@
 use super::ConsoleState;
+use crate::hud::PlayerStats;
 use crate::internal::*;
 use crate::scripting::CVarRegistry;
 use crate::scripting::process_script;
-use crate::hud::PlayerStats;
 use fallgray_bevy_ui::EntityCommandsUIExt;
 
 //=============================================================================
