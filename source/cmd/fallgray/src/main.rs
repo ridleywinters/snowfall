@@ -9,7 +9,6 @@ mod item;
 mod menu;
 mod rendering;
 mod scripting;
-mod ui_styles;
 mod weapon;
 mod world;
 use actor::ActorPlugin;

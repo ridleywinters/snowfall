@@ -2,7 +2,7 @@ use crate::console::ConsoleState;
 use crate::game_state::GamePlayEntity;
 use crate::game_state::GameState;
 use crate::rendering::load_image_texture;
-use crate::ui_styles::EntityCommandsUIExt;
+use fallgray_bevy_ui::EntityCommandsUIExt;
 use bevy::prelude::*;
 
 /// Resource tracking the currently active toolbar slot

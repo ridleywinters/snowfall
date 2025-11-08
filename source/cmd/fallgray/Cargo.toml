@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 bevy = { version = "0.17.2", features = ["dynamic_linking"] }
 chrono = "0.4"
+fallgray_bevy_ui = { path = "../../crates/fallgray_bevy_ui" }
 pathfinding = "4.0"
 rand = "0.9.2"
 regex = "1.12.2"

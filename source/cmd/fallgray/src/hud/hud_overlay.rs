@@ -1,7 +1,7 @@
 use crate::camera::Player;
 use crate::game_state::GamePlayEntity;
 use crate::rendering::load_image_texture;
-use crate::ui_styles::EntityCommandsUIExt;
+use fallgray_bevy_ui::EntityCommandsUIExt;
 use bevy::prelude::*;
 
 #[derive(Resource)]

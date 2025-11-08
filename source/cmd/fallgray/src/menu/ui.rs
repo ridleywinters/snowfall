@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::game_state::GameState;
-use crate::ui_styles::EntityCommandsUIExt;
+use fallgray_bevy_ui::EntityCommandsUIExt;
 
 #[derive(Component)]
 pub(super) struct MainMenuUI;
