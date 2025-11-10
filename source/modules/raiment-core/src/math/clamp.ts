@@ -12,3 +12,7 @@ export function clamp(value: number, min: number, max: number): number {
     }
     return value;
 }
+
+export function clampi(value: number, min: number, max: number): number {
+    return Math.floor(clamp(value, min, max));
+}

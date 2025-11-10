@@ -6,6 +6,8 @@
         "denoland.vscode-deno",
         "1yib.rust-bundle",
         "esbenp.prettier-vscode",
-        "dnut.rewrap-revived"
+        "dnut.rewrap-revived",
+        "formulahendry.auto-rename-tag",
+        "heckaraddev.vscode-embedded-css-template-strings"
     ]
 }

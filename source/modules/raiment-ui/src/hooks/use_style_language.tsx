@@ -15,6 +15,7 @@
  */
 
 import React from "react";
+import { hashString } from "../internal/hash_string.ts";
 
 export type StyleLanguage = string | string[] | Record<string, boolean>;
 
@@ -78,16 +79,6 @@ export function useStyleLanguage(sl: StyleLanguage | undefined): string {
     }, [className]);
 
     return className;
-}
-
-function hashString(input: string): number {
-    let hash = 0;
-    for (let i = 0; i < input.length; i++) {
-        const charCode = input.charCodeAt(i);
-        hash = (hash << 5) - hash + charCode;
-        hash = hash & hash; // Convert to 32-bit integer
-    }
-    return Math.abs(hash);
 }
 
 /**
@@ -222,6 +213,10 @@ const RULES_TABLE_SOURCE: StyleLanguageRule[] = [
     [
         /(width|height|min-width|min-height|max-width|max-height)-([0-9]+)/,
         (m) => `${m[1]}: ${m[2]}px;`,
+    ],
+    [
+        /(width|height|min-width|min-height|max-width|max-height)-(.+)/,
+        (m) => `${m[1]}: ${m[2]};`,
     ],
     [
         /(border-box|content-box)/,
@@ -407,5 +402,9 @@ const RULES_TABLE_SOURCE: StyleLanguageRule[] = [
     [
         /bg-gray-([0-9]+)%?/,
         (m) => `background-color: hsl(0, 0%, ${m[1]}%);`,
+    ],
+    [
+        /bg-#([0-9A-Za-z]+)/,
+        (m) => `background-color: #${m[1]};`,
     ],
 ];

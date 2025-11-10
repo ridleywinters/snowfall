@@ -103,6 +103,12 @@
                 }
             },
             {
+                "scope": "string.template",
+                "settings": {
+                    "foreground": "#a6de75"
+                }
+            },
+            {
                 "scope": "constant.numeric",
                 "settings": {
                     "foreground": "#278bd3"
