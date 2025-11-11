@@ -43,6 +43,8 @@ export async function validateCommitMessage(filename: string) {
     if (parts.length === 1) {
         sh.cprintln("[Commit message must contain a <type>: <message>](red)");
         sh.cprintln("");
+        sh.cprintln("Found: [" + message.trim() + "](yellow)");
+        sh.cprintln("");
         printValidTypes();
         Deno.exit(1);
     }
