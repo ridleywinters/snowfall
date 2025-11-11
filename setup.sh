@@ -153,6 +153,7 @@ done
 git remote add raiment-devenv git@github.com:ridleywinters/raiment-devenv.git 2> /dev/null || true
 git remote add raiment-core git@github.com:ridleywinters/raiment-core.git 2> /dev/null || true
 git remote add raiment-ui git@github.com:ridleywinters/raiment-ui.git 2> /dev/null || true
+git remote add raiment-shell git@github.com:ridleywinters/raiment-shell.git 2> /dev/null || true
 #git subtree add --prefix=source/modules/raiment-devenv raiment-devenv main --squash 2> /dev/null || true
 
 #==============================================================================
