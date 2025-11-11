@@ -12,7 +12,7 @@ fi
 #==============================================================================
 
 function scd() {
-  cd "$($REPO_ROOT/source/scripts/find_matching_directory.ts "$1")"
+  cd "$($REPO_ROOT/source/modules/raiment-devenv/scripts/find_matching_directory.ts "$1")"
 }
 
 #==============================================================================
@@ -47,5 +47,5 @@ function gcap() {
 #==============================================================================
 
 function scratch() {
-  $REPO_ROOT/source/scripts/create_scratch_entry.ts
+  $REPO_ROOT/source/modules/raiment-devenv/scripts/create_scratch_entry.ts
 }
