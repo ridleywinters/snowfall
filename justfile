@@ -54,27 +54,35 @@ test: build
     @just run-foreach "source/modules" test
 
 #==============================================================================
-# publish
+# sync
 #==============================================================================
 
-pull-subtree:
-    @echo "Pulling subtrees..."
+# Syncs all subtrees and pushes to origin
+sync:
+    git status --short
+    just subtree-pull
+    just subtree-push
+    git push
+
+[private]
+subtree-pull:
+    @echo "Pulling subtrees..."    
     git subtree pull --prefix=source/modules/raiment-devenv raiment-devenv main --squash
     git subtree pull --prefix=source/modules/raiment-core raiment-core main --squash
     git subtree pull --prefix=source/modules/raiment-ui raiment-ui main --squash
     git subtree pull --prefix=source/modules/raiment-shell raiment-shell main --squash
-    
-push-subtree:
-    @echo "Pushing subtrees..."    
+
+[private]
+subtree-push:
+    @echo "Pushing subtrees..."
     git subtree push --prefix=source/modules/raiment-devenv raiment-devenv main
     git subtree push --prefix=source/modules/raiment-core raiment-core main
     git subtree push --prefix=source/modules/raiment-ui raiment-ui main
     git subtree push --prefix=source/modules/raiment-shell raiment-shell main
 
-sync-subtree:
-    @just pull-subtree
-    @just push-subtree
-    git push
+#==============================================================================
+# publish
+#==============================================================================
 
 # Publishes all projects 
 publish:
