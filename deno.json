@@ -1,0 +1,36 @@
+{
+    "imports": {
+        "@/": "./src/",
+        "@std/expect": "jsr:@std/expect@^1.0.17",
+        "@std/random": "jsr:@std/random@^0.1.3",
+        "@std/testing": "jsr:@std/testing@^1.0.16",
+        "@std/yaml": "jsr:@std/yaml@^1.0.10",
+        "@raiment-core": "../raiment-core/mod.ts"
+    },
+    "compilerOptions": {
+        "strict": true,
+        "lib": [
+            "deno.ns",
+            "deno.window",
+            "esnext"
+        ]
+    },
+    "fmt": {
+        "useTabs": false,
+        "indentWidth": 4,
+        "lineWidth": 100
+    },
+    "lint": {
+        "rules": {
+            "tags": [
+                "recommended"
+            ],
+            "exclude": [
+                "require-await",
+                "require-yield",
+                "no-explicit-any",
+                "no-unused-vars"
+            ]
+        }
+    }
+}
