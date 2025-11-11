@@ -1,0 +1,63 @@
+import "../../../../common/common.justfile"
+
+CWD := shell('pwd')
+ENTRYPOINT := "./src/main.tsx"
+
+#==============================================================================
+# default
+#==============================================================================
+
+[private]
+default:
+    @just --list --unsorted
+
+#==============================================================================
+# ensure
+#==============================================================================
+
+ensure:
+    rm -f mprocs.log
+
+#==============================================================================
+# build
+#==============================================================================
+
+build: ensure build-only
+
+[private]
+build-only:
+    mkdir -p dist
+    cp -f src/public/* dist/
+    deno bundle \
+      --unstable-raw-imports \
+      --platform=browser \
+      --sourcemap=inline \
+      --output dist/main.bundle.js \
+      {{ENTRYPOINT}}
+    date > dist/build.timestamp
+
+#==============================================================================
+# dev
+#==============================================================================
+
+dev: ensure
+    mprocs \
+        --proc-list-title "example 8080" \
+        --names "client,server" \
+        "just dev-client" \
+        "just dev-server"
+
+dev-client:
+    watchexec \
+        --watch {{ENTRYPOINT}} \
+        --watch "${REPO_ROOT}/source/modules/raiment-core/src" \
+        --watch "${REPO_ROOT}/source/modules/raiment-ui/src" \
+        --exts ts,tsx,html,css,png,yaml,json \
+        "just build-only && sleep 1"
+
+# Starts the development server with live reloading
+dev-server:
+    cd "${REPO_ROOT}/source/tools/raiment-dev-server" && just dev \
+        --working-directory "{{CWD}}" \
+        --title "palette-editor" \
+        --port 8080
