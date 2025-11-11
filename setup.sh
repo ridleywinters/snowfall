@@ -160,7 +160,7 @@ git remote add raiment-shell git@github.com:ridleywinters/raiment-shell.git 2> /
 # Aliases and tools
 #==============================================================================
 
-source "$REPO_ROOT/source/scripts/set_aliases.sh"
+source "$REPO_ROOT/source/modules/raiment-devenv/scripts/set_aliases.sh"
 
 #==============================================================================
 # Done.
