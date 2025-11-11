@@ -4,6 +4,16 @@ import { sh } from "@raiment-shell";
 export async function validateCommitMessage(filename: string) {
     const message = await Deno.readTextFile(filename);
 
+    // Test for some known exceptions for things like merge commits
+    const exceptions: Array<(s: string) => boolean> = [
+        (s) => s.startsWith("Merge commit"),
+    ];
+    for (const exception of exceptions) {
+        if (exception(message)) {
+            Deno.exit(0);
+        }
+    }
+
     const validTypeDescs = {
         feat: "a new feature or improvement in user experience",
         fix: "a bug fix",
@@ -19,7 +29,9 @@ export async function validateCommitMessage(filename: string) {
     const printValidTypes = () => {
         sh.cprintln("[Valid commit prefixes:](white)");
         for (const [type, desc] of Object.entries(validTypeDescs)) {
-            sh.cprintln(`  [${type.padStart(5, " ")}](DeepSkyBlue): [${desc}](gray)`);
+            sh.cprintln(
+                `  [${type.padStart(5, " ")}](DeepSkyBlue): [${desc}](gray)`,
+            );
         }
     };
 
@@ -31,7 +43,9 @@ export async function validateCommitMessage(filename: string) {
     const last = await sh.spawn("git", ["log", "-n", "1", "--pretty=%B"]);
     const scrub = (s: string) => s.toLocaleLowerCase().replace(/\s/g, "");
     if (scrub(last) === scrub(message)) {
-        sh.cprintln("[Commit message is the same as the last commit message](red)");
+        sh.cprintln(
+            "[Commit message is the same as the last commit message](red)",
+        );
         sh.cprintln("");
         Deno.exit(1);
     }
