@@ -57,6 +57,21 @@ test: build
 # publish
 #==============================================================================
 
+pull-subtree:
+    @echo "Pulling subtrees..."
+    git subtree pull --prefix=source/modules/raiment-core-test raiment-core-test main --squash
+    git subtree pull --prefix=source/modules/raiment-devenv raiment-devenv main --squash
+
+push-subtree:
+    @echo "Pushing subtrees..."
+    git subtree push --prefix=source/modules/raiment-core-test raiment-core-test main
+    git subtree push --prefix=source/modules/raiment-devenv raiment-devenv main
+
+sync-subtree:
+    @just pull-subtree
+    @just push-subtree
+    git push
+
 # Publishes all projects 
 publish:
     echo "TODO"

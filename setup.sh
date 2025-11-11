@@ -149,6 +149,10 @@ for source in $REPO_ROOT/config/git-hooks/*; do
     chmod +x $target
 done
 
+
+git remote add raiment-devenv git@github.com:ridleywinters/raiment-devenv.git 2> /dev/null || true
+git subtree add --prefix=source/modules/raiment-devenv lib main --squash
+
 #==============================================================================
 # Aliases and tools
 #==============================================================================
