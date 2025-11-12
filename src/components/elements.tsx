@@ -33,12 +33,15 @@ function Element<T extends ElementType>({
     );
 }
 
-function createExtendedElement<T extends ElementType>(tag: T) {
+function createExtendedElement<T extends ElementType>(      tag: T,
+    baseProps: Partial<TagProps<T>> = {}
+) {
     return function WrappedElement(props: Omit<TagProps<T>, "tag">): JSX.Element {
-        return <Element tag={tag} {...props as any} />;
+        return <Element tag={tag} {...baseProps} {...props as any} />;
     };
 }
 
 export const Div = createExtendedElement("div");
 export const Span = createExtendedElement("span");
 export const Anchor = createExtendedElement("a");
+export const Button = createExtendedElement("button", {type : "button"});
