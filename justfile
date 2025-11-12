@@ -1,4 +1,4 @@
-import "../../common/common.justfile"
+import x"$REPO_ROOT/source/modules/raiment-devenv/build/common.justfile"
 
 ensure:
     @just ensure-vscode-directory

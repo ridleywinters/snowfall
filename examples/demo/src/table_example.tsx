@@ -1,5 +1,5 @@
 import React, { JSX } from "react";
-import { css, Div, useCSS } from "@raiment-ui";
+import { css, Div, useCSSLocal } from "@raiment-ui";
 import * as core from "@raiment-core";
 
 type DashboardEntry = {
@@ -29,8 +29,7 @@ export function TableExample(): JSX.Element {
         return db;
     }, []);
 
-    const cl = useCSS(
-        "local",
+    const cl = useCSSLocal(
         css`
             .table {
                 display: inline-grid;
