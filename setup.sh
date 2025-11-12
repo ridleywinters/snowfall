@@ -82,7 +82,7 @@ if [ ! -f "$CARGO_HOME/bin/watchexec" ]; then
     echo 
 fi
 if [ ! -f "$REPO_ROOT/bin/apps/blender" ]; then
-    ./source/scripts/download-blender.ts "$REPO_ROOT/bin/apps"
+    ./source/modules/raiment-devenv/scripts/download-blender.ts "$REPO_ROOT/bin/apps"
     ln -s "$REPO_ROOT/bin/apps/blender" "$REPO_ROOT/bin/blender"
     echo
 fi
