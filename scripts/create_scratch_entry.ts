@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-read --allow-write --allow-run
+#!/usr/bin/env -S deno run --allow-read --allow-write --allow-run --allow-env
 
 /**
  * Creates a temporary scratch file (that will not be committed to the repo) and
@@ -17,7 +17,7 @@ function formatDate(d: Date): string {
 async function main() {
     const date = new Date();
     const name = `${formatDate(date)}.md`;
-    const tempDir = "temp";
+    const tempDir = sh.expandEnvVars("$REPO_ROOT/temp");
     const path = `${tempDir}/${name}`;
 
     // Check if file exists; if not, create with a small header
