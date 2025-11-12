@@ -407,4 +407,21 @@ const RULES_TABLE_SOURCE: StyleLanguageRule[] = [
         /bg-#([0-9A-Za-z]+)/,
         (m) => `background-color: #${m[1]};`,
     ],
+    [
+        /bg-hover-#([0-9A-Za-z]+)/,
+        (m) => `&:hover { background-color: #${m[1]}; }`,
+    ],
+
+    //-------------------------------------------------------------------------
+    // Borders
+    //-------------------------------------------------------------------------
+    
+    [
+        /border-#([0-9A-Za-z]+)/,
+        (m) => `border: 1px solid #${m[1]};`,
+    ],
+    [
+        /border-radius-([0-9]+)/,
+        (m) => `border-radius: ${m[1]}px;`,
+    ],
 ];

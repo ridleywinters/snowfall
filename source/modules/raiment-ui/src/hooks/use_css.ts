@@ -10,7 +10,7 @@ import { hashString } from "../internal/hash_string.ts";
  * If the `scope` is "global", it will return a unique string based on the CSS content,
  * but it does not represent a class name and should not be used as such.
  */
-export function useCSS(scope: "global" | "local", cssString: string | undefined): string {
+function useCSS(scope: "global" | "local", cssString: string | undefined): string {
     const className = React.useMemo(() => {
         const content = cssString?.trim();
         if (!content) {
@@ -63,3 +63,13 @@ export function useCSS(scope: "global" | "local", cssString: string | undefined)
 
     return className;
 }
+
+
+export function useCSSLocal(cssString: string | undefined): string {
+    return useCSS("local", cssString);
+}
+
+export function useCSSGlobal(cssString: string | undefined): string {
+    return useCSS("global", cssString);
+}
+
