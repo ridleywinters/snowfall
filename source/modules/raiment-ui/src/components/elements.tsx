@@ -5,7 +5,7 @@ type TagProps<T extends ElementType> =
     & {
         tag: T;
         sl?: StyleLanguage;
-        cl?: string;
+        cl?: string | string[];
     }
     & { [key in `data-${string}`]?: string | number | boolean }
     & React.ComponentPropsWithoutRef<T>;
@@ -20,7 +20,11 @@ function Element<T extends ElementType>({
 }: TagProps<T>): JSX.Element {
     const Component = tag;
     const slClassName = useStyleLanguage(sl);
-    const computedClass = [className, cl, slClassName].filter((c) => c).join(" ") || undefined;
+    const clClassName = Array.isArray(cl) ? cl.join(" ") : cl;
+    const computedClass = [slClassName, className, clClassName] //
+        .filter((c) => Boolean(c)) //
+        .join(" ") ??
+        undefined;
 
     return (
         <Component
@@ -33,8 +37,9 @@ function Element<T extends ElementType>({
     );
 }
 
-function createExtendedElement<T extends ElementType>(      tag: T,
-    baseProps: Partial<TagProps<T>> = {}
+function createExtendedElement<T extends ElementType>(
+    tag: T,
+    baseProps: Partial<TagProps<T>> = {},
 ) {
     return function WrappedElement(props: Omit<TagProps<T>, "tag">): JSX.Element {
         return <Element tag={tag} {...baseProps} {...props as any} />;
@@ -44,4 +49,5 @@ function createExtendedElement<T extends ElementType>(      tag: T,
 export const Div = createExtendedElement("div");
 export const Span = createExtendedElement("span");
 export const Anchor = createExtendedElement("a");
-export const Button = createExtendedElement("button", {type : "button"});
+export const Button = createExtendedElement("button", { type: "button" });
+export const Input = createExtendedElement("input");
