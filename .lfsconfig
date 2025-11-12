@@ -1,0 +1,4 @@
+# .lfsconfig (commit this at repo root)
+[lfs]
+url = https://github.com/ridleywinters/lfs-host.git/info/lfs
+pushurl = https://github.com/ridleywinters/lfs-host.git/info/lfs

@@ -59,10 +59,15 @@ test: build
 
 # Syncs all subtrees and pushes to origin
 sync:
+    git fetch
     git status --short
+    git pull
+    git lfs push --all https://github.com/ridleywinters/lfs-host.git
     just subtree-pull
     just subtree-push
-    git push
+    just subtree-pull
+    just subtree-push
+    git push    
 
 [private]
 subtree-pull:
