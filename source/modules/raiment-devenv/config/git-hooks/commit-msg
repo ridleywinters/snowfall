@@ -7,6 +7,7 @@ export async function validateCommitMessage(filename: string) {
     // Test for some known exceptions for things like merge commits
     const exceptions: Array<(s: string) => boolean> = [
         (s) => s.startsWith("Merge commit"),
+        (s) => s.startsWith("Merge branch"),
     ];
     for (const exception of exceptions) {
         if (exception(message)) {
