@@ -44,6 +44,7 @@ ensure-build-directory:
 repo-sync:
     git fetch
     git status --short
+    @git diff-index --quiet HEAD --
     git pull
     git lfs push --all https://github.com/ridleywinters/lfs-host.git
     -git remote add raiment-devenv git@github.com:ridleywinters/raiment-devenv.git 2> /dev/null
