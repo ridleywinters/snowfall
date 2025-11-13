@@ -72,7 +72,9 @@ async function resolveArtifactURL(
         }
     }
     throw new Error(
-        `No artifact found for ${version} (${tag}) with extensions [${exts.join(", ")}].`,
+        `No artifact found for ${version} (${tag}) with extensions [${
+            exts.join(", ")
+        }].`,
     );
 }
 
@@ -97,7 +99,7 @@ async function expandDmg(dmgPath: string, outDir: string): Promise<string> {
         // Create a bash wrapper script to run Blender
         const scriptPath = `${outDir}/blender`;
         const scriptContent = `#!/bin/bash
-"${blenderAppPath}/Contents/MacOS/Blender" "$@"
+"${blenderAppPath}/Contents/MacOS/Blender" "$@" 1>/dev/null 2>&1 &
 `;
         await Deno.writeTextFile(scriptPath, scriptContent, { mode: 0o755 });
         console.log(`Created launcher script: ${scriptPath}`);
@@ -113,7 +115,9 @@ async function expandDmg(dmgPath: string, outDir: string): Promise<string> {
 async function downloadTo(url: string, outDir: string): Promise<string> {
     await sh.mkdir(outDir);
     const filename = url.split("/").pop()!;
-    const outPath = outDir.endsWith("/") ? (outDir + filename) : `${outDir}/${filename}`;
+    const outPath = outDir.endsWith("/")
+        ? (outDir + filename)
+        : `${outDir}/${filename}`;
 
     const r = await fetch(url);
     if (!r.ok || !r.body) {
@@ -169,9 +173,10 @@ async function main() {
             await Deno.writeTextFile(launcherPath, lines.join("\n"), {
                 mode: 0o755,
             });
-            sh.cprintln(`Created launcher script: [${launcherPath}](goldenrod)`);
+            sh.cprintln(
+                `Created launcher script: [${launcherPath}](goldenrod)`,
+            );
         }
-
     } catch (err) {
         console.error(
             `Error: ${err instanceof Error ? err.message : String(err)}`,

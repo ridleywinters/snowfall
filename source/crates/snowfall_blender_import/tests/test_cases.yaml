@@ -1,0 +1,21 @@
+- name: basic_cube
+  file: tests/basic-cube.blend
+  expected:
+    version: "4.0.5"
+    pointer_size: Bits64
+    endianness: Little
+    meshes:
+      - name: Cube
+        vertex_count: 8
+        triangle_count: 12
+        positions:
+          - [1.0, 1.0, 1.0]
+          - [1.0, 1.0, -1.0]
+          - [1.0, -1.0, 1.0]
+          - [1.0, -1.0, -1.0]
+          - [-1.0, 1.0, 1.0]
+          - [-1.0, 1.0, -1.0]
+          - [-1.0, -1.0, 1.0]
+          - [-1.0, -1.0, -1.0]
+        # First triangle indices
+        first_triangle: [0, 4, 6]

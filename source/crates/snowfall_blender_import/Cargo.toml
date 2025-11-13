@@ -1,0 +1,13 @@
+[package]
+name = "snowfall_blender_import"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+blend = "0.8.0"
+anyhow = "1.0"
+glam = "0.29"
+
+[dev-dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
