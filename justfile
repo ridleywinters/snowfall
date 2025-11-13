@@ -1,4 +1,4 @@
-import "source/common/common.justfile"
+import x"source/modules/raiment-devenv/build/common.justfile"
 
 #==============================================================================
 # default
@@ -58,32 +58,7 @@ test: build
 #==============================================================================
 
 # Syncs all subtrees and pushes to origin
-sync:
-    git fetch
-    git status --short
-    git pull
-    git lfs push --all https://github.com/ridleywinters/lfs-host.git
-    just subtree-pull
-    just subtree-push
-    just subtree-pull
-    just subtree-push
-    git push    
-
-[private]
-subtree-pull:
-    @echo "Pulling subtrees..."    
-    git subtree pull --prefix=source/modules/raiment-devenv raiment-devenv main --squash
-    git subtree pull --prefix=source/modules/raiment-core raiment-core main --squash
-    git subtree pull --prefix=source/modules/raiment-ui raiment-ui main --squash
-    git subtree pull --prefix=source/modules/raiment-shell raiment-shell main --squash
-
-[private]
-subtree-push:
-    @echo "Pushing subtrees..."
-    git subtree push --prefix=source/modules/raiment-devenv raiment-devenv main
-    git subtree push --prefix=source/modules/raiment-core raiment-core main
-    git subtree push --prefix=source/modules/raiment-ui raiment-ui main
-    git subtree push --prefix=source/modules/raiment-shell raiment-shell main
+sync: repo-sync
 
 #==============================================================================
 # publish

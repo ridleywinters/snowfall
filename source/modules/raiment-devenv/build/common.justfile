@@ -33,3 +33,41 @@ ensure-build-directory:
     @just ensure-vscode-directory
     @./build/vscode_settings_to_workspace.ts ".vscode/settings.json" .
 
+
+
+#==============================================================================
+# sync
+#==============================================================================
+
+# Syncs all subtrees and pushes to origin
+[private]
+repo-sync:
+    git fetch
+    git status --short
+    git pull
+    git lfs push --all https://github.com/ridleywinters/lfs-host.git
+    -git remote add raiment-devenv git@github.com:ridleywinters/raiment-devenv.git 2> /dev/null
+    -git remote add raiment-core git@github.com:ridleywinters/raiment-core.git 2> /dev/null
+    -git remote add raiment-ui git@github.com:ridleywinters/raiment-ui.git 2> /dev/null
+    -git remote add raiment-shell git@github.com:ridleywinters/raiment-shell.git 2> /dev/null
+    @just repo-subtree-pull
+    @just repo-subtree-push
+    @just repo-subtree-pull
+    @just repo-subtree-push
+    git push
+
+[private]
+repo-subtree-pull:
+    @echo "Pulling subtrees..."    
+    git subtree pull --prefix=source/modules/raiment-devenv raiment-devenv main --squash --message="Merge commit"
+    git subtree pull --prefix=source/modules/raiment-core raiment-core main --squash --message="Merge commit"
+    git subtree pull --prefix=source/modules/raiment-ui raiment-ui main --squash --message="Merge commit"
+    git subtree pull --prefix=source/modules/raiment-shell raiment-shell main --squash --message="Merge commit"
+
+[private]
+repo-subtree-push:
+    @echo "Pushing subtrees..."
+    git subtree push --prefix=source/modules/raiment-devenv raiment-devenv main
+    git subtree push --prefix=source/modules/raiment-core raiment-core main
+    git subtree push --prefix=source/modules/raiment-ui raiment-ui main
+    git subtree push --prefix=source/modules/raiment-shell raiment-shell main
