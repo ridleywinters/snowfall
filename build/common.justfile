@@ -42,9 +42,9 @@ ensure-build-directory:
 # Syncs all subtrees and pushes to origin
 [private]
 repo-sync:
-    git fetch
     git status --short
     @git diff-index --quiet HEAD --
+    git fetch
     git pull
     git lfs push --all https://github.com/ridleywinters/lfs-host.git
     -git remote add raiment-devenv git@github.com:ridleywinters/raiment-devenv.git 2> /dev/null
