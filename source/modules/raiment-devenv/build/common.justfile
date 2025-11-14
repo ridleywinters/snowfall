@@ -46,7 +46,8 @@ repo-sync:
     @git diff-index --quiet HEAD --
     git fetch
     git pull
-    git lfs push --all https://github.com/ridleywinters/lfs-host.git
+    echo git lfs push --all https://github.com/ridleywinters/lfs-host.git
+    git lfs push --all git@github.com:ridleywinters/lfs-host.git
     -git remote add raiment-devenv git@github.com:ridleywinters/raiment-devenv.git 2> /dev/null
     -git remote add raiment-core git@github.com:ridleywinters/raiment-core.git 2> /dev/null
     -git remote add raiment-ui git@github.com:ridleywinters/raiment-ui.git 2> /dev/null
