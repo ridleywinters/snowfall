@@ -253,6 +253,10 @@ const RULES_TABLE_SOURCE: StyleLanguageRule[] = [
         (m) => `flex: ${m[1]} ${m[2]} ${m[3]};`,
     ],
     [
+        /grow-([0-9]+)/,
+        (m) => `flex-grow: ${m[1]};`,
+    ],
+    [
         /gap-([0-9]+)/,
         (m) => `gap: ${m[1]}px;`,
     ],
@@ -378,6 +382,10 @@ const RULES_TABLE_SOURCE: StyleLanguageRule[] = [
     //-------------------------------------------------------------------------
     // Colors
     //-------------------------------------------------------------------------
+    [
+        /opacity-([0-9]+)%?/,
+        (m) => `opacity: ${parseInt(m[1]) / 100};`,
+    ],
 
     [
         /fg-(white|black|red|green|blue)/,
@@ -415,7 +423,15 @@ const RULES_TABLE_SOURCE: StyleLanguageRule[] = [
     //-------------------------------------------------------------------------
     // Borders
     //-------------------------------------------------------------------------
-    
+
+    [
+        /border-(none|solid|dashed|dotted)/,
+        (m) => `border-style: ${m[1]};`,
+    ],
+    [
+        /border-bottom-#([0-9A-Za-z]+)/,
+        (m) => `border-bottom: 1px solid #${m[1]};`,
+    ],
     [
         /border-#([0-9A-Za-z]+)/,
         (m) => `border: 1px solid #${m[1]};`,
@@ -423,5 +439,13 @@ const RULES_TABLE_SOURCE: StyleLanguageRule[] = [
     [
         /border-radius-([0-9]+)/,
         (m) => `border-radius: ${m[1]}px;`,
+    ],
+
+    //-------------------------------------------------------------------------
+    // User select
+    //-------------------------------------------------------------------------
+    [
+        /select-(none|text|all|auto)/,
+        (m) => `user-select: ${m[1]};`,
     ],
 ];
