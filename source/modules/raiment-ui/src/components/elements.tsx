@@ -1,7 +1,7 @@
 import React, { ElementType, JSX } from "react";
 import { StyleLanguage, useStyleLanguage } from "../hooks/use_style_language.tsx";
 
-type TagProps<T extends ElementType> =
+export type TagProps<T extends ElementType> =
     & {
         tag: T;
         sl?: StyleLanguage;
@@ -10,7 +10,7 @@ type TagProps<T extends ElementType> =
     & { [key in `data-${string}`]?: string | number | boolean }
     & React.ComponentPropsWithoutRef<T>;
 
-function Element<T extends ElementType>({
+export function Element<T extends ElementType>({
     tag,
     sl,
     cl,
@@ -50,4 +50,3 @@ export const Div = createExtendedElement("div");
 export const Span = createExtendedElement("span");
 export const Anchor = createExtendedElement("a");
 export const Button = createExtendedElement("button", { type: "button" });
-export const Input = createExtendedElement("input");
