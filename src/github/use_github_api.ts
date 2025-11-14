@@ -7,6 +7,6 @@ export function useGitHubAPI(): GitHubAPI {
     const api = React.useMemo(() => {
         const api = new GitHubAPI(authState.accessToken, authState.authState);
         return api;
-    }, [authState.accessToken, authState.authState]);
+    }, [authState, authState.accessToken, authState.authState]);
     return api;
 }
