@@ -1,4 +1,5 @@
 export * from "./components/elements.tsx";
+export * from "./components/input.tsx";
 export * from "./dom/invoke_download.ts";
 export * from "./github/github_api.ts";
 export * from "./github/use_github_api.ts";
