@@ -4,6 +4,7 @@ import { StyleLanguage, useStyleLanguage } from "../hooks/use_style_language.tsx
 export type TagProps<T extends ElementType> =
     & {
         tag: T;
+        ref?: React.Ref<React.ComponentRef<T>>;
         sl?: StyleLanguage;
         cl?: string | string[];
     }
@@ -12,6 +13,7 @@ export type TagProps<T extends ElementType> =
 
 export function Element<T extends ElementType>({
     tag,
+    ref,
     sl,
     cl,
     className,
@@ -29,6 +31,7 @@ export function Element<T extends ElementType>({
     return (
         <Component
             data-component={props["data-component"]}
+            ref={ref}
             className={computedClass}
             {...props as any}
         >

@@ -183,6 +183,9 @@ const RULES_TABLE_SOURCE: StyleLanguageRule[] = [
     // absolute, relative, fixed, sticky
     // top-*, right-*, bottom-*, left-*
     // z-*
+    // border-box, content-box
+    // display-none, display-block, display-inline, display-inline-block,
+    // display-flex, display-grid
     //-------------------------------------------------------------------------
 
     [
@@ -196,6 +199,14 @@ const RULES_TABLE_SOURCE: StyleLanguageRule[] = [
     [
         /z-?([0-9]+)/,
         (m) => `z-index: ${m[1]};`,
+    ],
+    [
+        /(border|content)-box/,
+        (m) => `box-sizing: ${m[1]};;`,
+    ],
+    [
+        /display-(none|block|inline|inline-block|flex|grid)/,
+        (m) => `display: ${m[1]};`,
     ],
 
     //-------------------------------------------------------------------------
@@ -222,6 +233,10 @@ const RULES_TABLE_SOURCE: StyleLanguageRule[] = [
         /(border-box|content-box)/,
         (m) => `box-sizing: ${m[1]};`,
     ],
+    [
+        /overflow-(auto|hidden|visible|scroll)/,
+        (m) => `overflow: ${m[1]};`,
+    ],
 
     //-------------------------------------------------------------------------
     // Flexbox
@@ -233,12 +248,20 @@ const RULES_TABLE_SOURCE: StyleLanguageRule[] = [
     //-------------------------------------------------------------------------
 
     [
+        "flex",
+        () => "display: flex;",
+    ],
+    [
         "flex-row",
         () => "display: flex; flex-direction: row;",
     ],
     [
         "flex-row-center",
         () => "display: flex; flex-direction: row; align-items: center;",
+    ],
+    [
+        /flex-row-(start|end)/,
+        (m) => `display: flex; flex-direction: row; align-items: flex-${m[1]};`,
     ],
     [
         "flex-col",
@@ -259,6 +282,22 @@ const RULES_TABLE_SOURCE: StyleLanguageRule[] = [
     [
         /gap-([0-9]+)/,
         (m) => `gap: ${m[1]}px;`,
+    ],
+    [
+        /align-(start|end)/,
+        (m) => `align-items: flex-${m[1]};`,
+    ],
+    [
+        /align-(flex-start|flex-end|center|stretch|baseline)/,
+        (m) => `align-items: ${m[1]};`,
+    ],
+    [
+        /justify-(start|end)/,
+        (m) => `justify-content: flex-${m[1]};`,
+    ],
+    [
+        /justify-(flex-start|flex-end|center|space-between|space-around|space-evenly)/,
+        (m) => `justify-content: ${m[1]};`,
     ],
 
     //-------------------------------------------------------------------------
@@ -369,6 +408,10 @@ const RULES_TABLE_SOURCE: StyleLanguageRule[] = [
         /text-(left|center|right|justify)/,
         (m) => `text-align: ${m[1]};`,
     ],
+    [
+        "no-wrap",
+        () => "white-space: nowrap;",
+    ],
 
     //-------------------------------------------------------------------------
     // Cursor
@@ -404,7 +447,7 @@ const RULES_TABLE_SOURCE: StyleLanguageRule[] = [
         (m) => `&:hover { color: #${m[1]}; }`,
     ],
     [
-        /bg-(white|black|red|green|blue)/,
+        /bg-(white|black|red|green|blue|transparent)/,
         (m) => `background-color: ${m[1]};`,
     ],
     [
@@ -429,16 +472,24 @@ const RULES_TABLE_SOURCE: StyleLanguageRule[] = [
         (m) => `border-style: ${m[1]};`,
     ],
     [
-        /border-bottom-#([0-9A-Za-z]+)/,
-        (m) => `border-bottom: 1px solid #${m[1]};`,
+        /border-(bottom|top|left|right)-(none|solid|dashed|dotted)-#([0-9A-Za-z]+)/,
+        (m) => `border-${m[1]}: 1px ${m[2]} #${m[3]};`,
+    ],
+    [
+        /border-(bottom|top|left|right)-#([0-9A-Za-z]+)/,
+        (m) => `border-${m[1]}: 1px solid #${m[2]};`,
     ],
     [
         /border-#([0-9A-Za-z]+)/,
         (m) => `border: 1px solid #${m[1]};`,
     ],
     [
-        /border-radius-([0-9]+)/,
-        (m) => `border-radius: ${m[1]}px;`,
+        /border-(width|radius)-([0-9]+)/,
+        (m) => `border-${m[1]}: ${m[2]}px;`,
+    ],
+    [
+        "outline-none",
+        () => "outline: none;",
     ],
 
     //-------------------------------------------------------------------------

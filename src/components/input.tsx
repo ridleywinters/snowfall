@@ -1,10 +1,11 @@
 import React, { JSX } from "react";
 import { Element, TagProps } from "./elements.tsx";
+import { handleKeyMapping, KeyMappingTable } from "../util/key_mapping.ts";
 
 type InputProps =
     & Omit<TagProps<"input">, "tag">
     & {
-        onKeyMap?: KeyMappingTable<HTMLInputElement>;
+        onKeyMap?: KeyMappingTable<React.KeyboardEvent<HTMLInputElement>>;
     };
 
 export function Input(
@@ -27,46 +28,4 @@ export function Input(
             {...rest as any}
         />
     );
-}
-
-type KeyMappingTable<T> = Record<string, (evt: React.KeyboardEvent<T>) => void>;
-
-function handleKeyMapping<T>(
-    evt: React.KeyboardEvent<T>,
-    table: KeyMappingTable<T>,
-): void {
-    let key = evt.key;
-    if (evt.ctrlKey || evt.metaKey) {
-        key = `Ctrl+${key}`;
-    }
-    if (evt.altKey) {
-        key = `Alt+${key}`;
-    }
-    if (evt.shiftKey) {
-        key = `Shift+${key}`;
-    }
-
-    const tableKeys = Object.keys(table);
-    let handler = undefined;
-    let stopEvent = true;
-    for (let i = 0; i < tableKeys.length; i++) {
-        const originalKey = tableKeys[i];
-        let k = originalKey;
-        if (k.endsWith("?")) {
-            k = k.slice(0, -1);
-            stopEvent = false;
-        }
-        if (k !== key) {
-            continue;
-        }
-        handler = table[originalKey];
-        break;
-    }
-    if (handler) {
-        if (stopEvent) {
-            evt.preventDefault();
-            evt.stopPropagation();
-        }
-        handler(evt);
-    }
 }
