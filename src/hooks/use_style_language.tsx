@@ -397,6 +397,10 @@ const RULES_TABLE_SOURCE: StyleLanguageRule[] = [
         (m) => `font-size: ${m[1]}px;`,
     ],
     [
+        /font-weight-([0-9]+)/,
+        (m) => `font-weight: ${m[1]};`,
+    ],
+    [
         /line-height-([0-9]+)%/,
         (m) => `line-height: ${m[1]}%;`,
     ],
