@@ -1,6 +1,16 @@
 use anyhow::Result;
-use snowfall_blender_import::load_from_file;
+use snowfall_blender_import::load_from_file_with_links;
+use std::collections::HashMap;
 use std::env;
+
+#[derive(Debug, Clone)]
+struct FlatInstance {
+    name: String,
+    mesh_name: String,
+    position: glam::Vec3,
+    rotation: glam::Vec3,
+    scale: glam::Vec3,
+}
 
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -13,79 +23,134 @@ fn main() -> Result<()> {
     let filename = &args[1];
     println!("Loading: {}", filename);
 
-    let blend_file = load_from_file(filename)?;
+    let blend_file = load_from_file_with_links(filename)?;
 
     println!("\n=== File Information ===");
     println!("Blender Version: {}", blend_file.version_string());
-    println!(
-        "Format: {}",
-        if blend_file.is_modern_format() {
-            "Modern (4.x+)"
-        } else {
-            "Legacy (2.x/3.x)"
-        }
-    );
     println!("Pointer Size: {:?}", blend_file.pointer_size);
     println!("Endianness: {:?}", blend_file.endianness);
     println!("Meshes Found: {}", blend_file.meshes.len());
+    println!("Collections Found: {}", blend_file.collections.len());
+    println!("Instances Found: {}", blend_file.instances.len());
 
-    for (i, mesh) in blend_file.meshes.iter().enumerate() {
-        println!("\n=== Mesh #{} ===", i + 1);
-        print_mesh_info(mesh);
+    // Build mesh lookup
+    let mesh_map: HashMap<String, &snowfall_blender_import::Mesh> = blend_file
+        .meshes
+        .iter()
+        .map(|m| (m.name.clone(), m))
+        .collect();
+
+    // Build collection to meshes mapping by looking at instances in the library file
+    // For now, we'll just flatten instances directly to meshes
+    let flat_instances = flatten_instances(&blend_file);
+
+    println!("\n=== Flattened Hierarchy ===");
+    println!("Total mesh instances: {}", flat_instances.len());
+
+    for (i, instance) in flat_instances.iter().enumerate() {
+        println!("\nInstance #{}: \"{}\"", i + 1, instance.name);
+        println!("  Mesh: \"{}\"", instance.mesh_name);
+
+        if let Some(mesh) = mesh_map.get(&instance.mesh_name) {
+            println!("    Vertices: {}", mesh.vertex_count());
+            println!("    BBox: {:?} - {:?}", mesh.bbox.min, mesh.bbox.max);
+            println!("    Size: {:?}", mesh.bbox.size());
+        } else {
+            println!("    (Mesh not found - may be in unloaded library)");
+        }
+
+        println!(
+            "  Position: [{:.3}, {:.3}, {:.3}]",
+            instance.position.x, instance.position.y, instance.position.z
+        );
+        println!(
+            "  Rotation: [{:.3}, {:.3}, {:.3}]",
+            instance.rotation.x, instance.rotation.y, instance.rotation.z
+        );
+        println!(
+            "  Scale: [{:.3}, {:.3}, {:.3}]",
+            instance.scale.x, instance.scale.y, instance.scale.z
+        );
     }
 
     Ok(())
 }
 
-fn print_mesh_info(mesh: &snowfall_blender_import::Mesh) {
-    println!("  Name: \"{}\"", mesh.name);
-    println!("  Vertices: {}", mesh.vertex_count());
-    println!("  Triangles: {}", mesh.triangle_count());
-    println!("  Normals: {}", mesh.normals.len());
-    println!("  UVs: {}", mesh.uvs.len());
-    println!("  Indices: {}", mesh.indices.len());
+fn flatten_instances(blend_file: &snowfall_blender_import::BlendFile) -> Vec<FlatInstance> {
+    let mut flat = Vec::new();
 
-    if !mesh.positions.is_empty() {
-        println!("  Sample vertex positions:");
-        for (i, pos) in mesh.positions.iter().take(3).enumerate() {
-            println!("    [{}] ({:.6}, {:.6}, {:.6})", i, pos.x, pos.y, pos.z);
-        }
-        if mesh.positions.len() > 3 {
-            println!("    ... and {} more", mesh.positions.len() - 3);
+    // Build a map of library paths to mesh instances
+    // These are the "template" instances that collections reference
+    let mut library_instances: HashMap<String, Vec<&snowfall_blender_import::MeshInstance>> =
+        HashMap::new();
+
+    for instance in &blend_file.instances {
+        if let Some(source) = &instance.source_file {
+            library_instances
+                .entry(source.clone())
+                .or_insert_with(Vec::new)
+                .push(instance);
         }
     }
 
-    if !mesh.normals.is_empty() {
-        println!("  Sample normals:");
-        for (i, normal) in mesh.normals.iter().take(3).enumerate() {
-            println!(
-                "    [{}] ({:.6}, {:.6}, {:.6})",
-                i, normal.x, normal.y, normal.z
-            );
+    // Expand instances
+    for instance in &blend_file.instances {
+        // Skip library instances - they're templates, not scene placements
+        if instance.source_file.is_some() {
+            continue;
         }
-        if mesh.normals.len() > 3 {
-            println!("    ... and {} more", mesh.normals.len() - 3);
+
+        match &instance.target {
+            snowfall_blender_import::ObjectRef::Mesh(mesh_name) => {
+                // Direct mesh instance
+                flat.push(FlatInstance {
+                    name: instance.name.clone(),
+                    mesh_name: mesh_name.clone(),
+                    position: instance.transform.translation,
+                    rotation: instance.transform.rotation,
+                    scale: instance.transform.scale,
+                });
+            }
+            snowfall_blender_import::ObjectRef::Collection(coll_name) => {
+                // Find the collection to get its library path
+                if let Some(collection) =
+                    blend_file.collections.iter().find(|c| &c.name == coll_name)
+                {
+                    if let Some(lib_path) = &collection.library_path {
+                        // Get all mesh instances from this library
+                        if let Some(lib_insts) = library_instances.get(lib_path) {
+                            // Create a flat instance for each mesh in the library
+                            // applying this instance's transform
+                            for lib_inst in lib_insts {
+                                if let snowfall_blender_import::ObjectRef::Mesh(mesh_name) =
+                                    &lib_inst.target
+                                {
+                                    // Combine transforms: apply library instance offset + main instance transform
+                                    let combined_pos = instance.transform.translation
+                                        + lib_inst.transform.translation;
+                                    let combined_rot =
+                                        instance.transform.rotation + lib_inst.transform.rotation;
+                                    let combined_scale =
+                                        instance.transform.scale * lib_inst.transform.scale;
+
+                                    flat.push(FlatInstance {
+                                        name: format!("{}:{}", instance.name, lib_inst.name),
+                                        mesh_name: mesh_name.clone(),
+                                        position: combined_pos,
+                                        rotation: combined_rot,
+                                        scale: combined_scale,
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            snowfall_blender_import::ObjectRef::Empty => {
+                // Skip
+            }
         }
     }
 
-    if !mesh.uvs.is_empty() {
-        println!("  Sample UVs:");
-        for (i, uv) in mesh.uvs.iter().take(3).enumerate() {
-            println!("    [{}] ({:.6}, {:.6})", i, uv.x, uv.y);
-        }
-        if mesh.uvs.len() > 3 {
-            println!("    ... and {} more", mesh.uvs.len() - 3);
-        }
-    }
-
-    if mesh.indices.len() >= 3 {
-        println!("  Sample triangle indices:");
-        println!(
-            "    Triangle 0: [{}, {}, {}]",
-            mesh.indices[0], mesh.indices[1], mesh.indices[2]
-        );
-        if mesh.triangle_count() > 1 {
-            println!("    ... and {} more triangles", mesh.triangle_count() - 1);
-        }
-    }
+    flat
 }
