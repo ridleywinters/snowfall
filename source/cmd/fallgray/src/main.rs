@@ -1,6 +1,7 @@
 mod actor;
 mod ai;
 mod camera;
+mod cli;
 mod combat;
 mod console;
 mod game_state;
@@ -15,6 +16,8 @@ use actor::ActorPlugin;
 use ai::AIPlugin;
 use bevy::prelude::*;
 use camera::{CameraPlugin, PlayerLightPlugin, update_camera_shake};
+use clap::Parser;
+pub use cli::Args;
 use combat::{update_blood_particles, update_damage_numbers, update_status_effects};
 use console::*;
 use game_state::{GameState, GameStatePlugin};
@@ -29,16 +32,20 @@ use world::{MapEditorPlugin, WorldPlugin};
 // MapFile and MapData are now defined in map.rs
 
 fn main() {
-    bevy_main();
+    let args = cli::Args::parse();
+    bevy_main(args);
 }
 
-fn bevy_main() {
+fn bevy_main(args: Args) {
+    // Parse command-line arguments
+
     // Get asset path from REPO_ROOT environment variable
     let asset_path = std::env::var("REPO_ROOT")
         .map(|repo_root| format!("{}/source/assets", repo_root))
         .unwrap();
 
     App::new()
+        .insert_resource(args)
         .add_plugins(
             DefaultPlugins
                 .set(bevy::asset::AssetPlugin {

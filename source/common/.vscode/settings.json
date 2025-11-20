@@ -84,7 +84,10 @@
         "editorBracketHighlight.foreground3": "#8e5c5f",
         "editorBracketHighlight.foreground4": "#7c1123",
         "editorBracketHighlight.foreground5": "#765863",
-        "editorBracketHighlight.foreground6": "#3260b5"
+        "editorBracketHighlight.foreground6": "#3260b5",
+
+        "diffEditor.insertedTextBackground": "#02f55b0f",
+        "diffEditor.removedTextBackground": "#ffaaaa20"
     },
     "editor.semanticTokenColorCustomizations": {
         "enabled": false,
