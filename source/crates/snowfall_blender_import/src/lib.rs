@@ -535,6 +535,7 @@ fn build_scene_graph(
                 };
 
                 scene.root.children.push(MNode::MInstance(MInstance {
+                    name: None,
                     geometry_id: mesh_id,
                     material_id: None,
                     transform: Some(instance_data.transform),
@@ -635,6 +636,9 @@ fn merge_meshes_from_nodes(
                 // Recursively process children
                 merge_meshes_from_nodes(&group.children, source_meshes, target_meshes);
             }
+            MNode::MLink(_link) => {
+                // TODO handle links
+            }
         }
     }
 }
@@ -657,6 +661,7 @@ fn build_group_from_collection(
         };
 
         children.push(MNode::MInstance(MInstance {
+            name: None,
             geometry_id: mesh_id,
             material_id: None,
             transform: None,

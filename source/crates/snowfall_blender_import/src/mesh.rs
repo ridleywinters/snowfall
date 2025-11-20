@@ -50,6 +50,7 @@ pub struct MTransform {
 pub enum MNode {
     MInstance(MInstance),
     MGroup(MGroup),
+    MLink(MLink),
 }
 
 #[derive(Debug, Clone)]
@@ -57,8 +58,16 @@ pub struct MMaterial {}
 
 #[derive(Debug, Clone)]
 pub struct MInstance {
+    pub name: Option<String>,
     pub geometry_id: MMeshID,
     pub material_id: Option<MMaterialID>,
+    pub transform: Option<MTransform>,
+}
+
+#[derive(Debug, Clone)]
+pub struct MLink {
+    pub id: String,
+    pub library: String,
     pub transform: Option<MTransform>,
 }
 
@@ -113,6 +122,9 @@ impl MScene {
 
                     let child_bounds = self.compute_bounds_recursive(&group.children, &transform);
                     bounds = bounds.merge(&child_bounds);
+                }
+                MNode::MLink(_link) => {
+                    // TODO
                 }
             }
         }
