@@ -64,6 +64,7 @@ pub struct MInstance {
 
 #[derive(Debug, Clone)]
 pub struct MGroup {
+    pub name: Option<String>,
     pub children: Vec<MNode>,
     pub transform: Option<MTransform>,
 }

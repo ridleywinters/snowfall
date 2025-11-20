@@ -9,7 +9,9 @@ mod bbox;
 pub use bbox::BBox;
 mod mesh;
 pub use mesh::*;
-
+// Blender object type constants
+const OBJ_TYPE_EMPTY: i32 = 0;
+const OBJ_TYPE_MESH: i32 = 1;
 // Blender uses a directly serialized format where the pointers are the
 // size used on the host system that wrote the file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -50,6 +52,7 @@ pub struct BlendFile {
     pub endianness: Endianness,
 
     pub scene: MScene,
+    pub linked_libraries: Vec<String>,
 }
 
 impl BlendFile {
@@ -65,144 +68,133 @@ impl BlendFile {
 /// Load mesh data from a .blend file
 pub fn load_from_file<P: AsRef<Path>>(path: P) -> Result<BlendFile> {
     let path = path.as_ref();
+
+    // First, scan for linked library files
     let data =
         std::fs::read(path).with_context(|| format!("Failed to read file: {}", path.display()))?;
-    load_from_memory(&data)
-}
 
-/// Load mesh data from a .blend file and resolve all linked collections
-pub fn load_from_file_with_links<P: AsRef<Path>>(path: P) -> Result<BlendFile> {
-    let path = path.as_ref();
-    load_from_file_with_links_internal(path, None)
-}
+    let blend_file = Blend::new(Cursor::new(&data))
+        .map_err(|e| anyhow::anyhow!("Failed to parse .blend file: {:?}", e))?;
 
-fn load_from_file_with_links_internal<P: AsRef<Path>>(
-    path: P,
-    mesh_id_prefix: Option<&str>,
-) -> Result<BlendFile> {
-    let path = path.as_ref();
-    let data =
-        std::fs::read(path).with_context(|| format!("Failed to read file: {}", path.display()))?;
-    let base_path = path.parent().unwrap_or_else(|| Path::new("."));
+    // Extract linked library paths
+    let mut linked_libraries = Vec::new();
+    for instance in blend_file.instances_with_code(*b"LI") {
+        if instance.is_valid("name") {
+            let filepath = instance.get_string("name");
+            linked_libraries.push(filepath);
+        }
+    }
 
-    // First, scan the file for linked library references
-    let library_paths = extract_library_paths(&data)?;
-
-    // Load all linked libraries first
+    // Load all linked libraries as complete scenes with meshes
     let mut linked_scenes = Vec::new();
-    for lib_path in library_paths {
+    for lib_path in linked_libraries {
+        // Resolve relative path
         let resolved_path = if lib_path.starts_with("//") {
-            base_path.join(&lib_path[2..])
+            // Blender relative path - relative to the blend file
+            let parent_dir = path.parent().unwrap_or(Path::new("."));
+            parent_dir.join(&lib_path[2..])
         } else {
             Path::new(&lib_path).to_path_buf()
         };
 
-        // Extract filename for mesh ID prefix
-        let filename = resolved_path
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("unknown");
-        let prefix = format!("{}::", filename);
+        println!(
+            "Loading linked library: {} -> {}",
+            lib_path,
+            resolved_path.display()
+        );
 
-        // Load the library file with prefixed mesh IDs
-        let lib_blend = load_from_file_with_links_internal(&resolved_path, Some(&prefix))
-            .with_context(|| format!("Failed to load linked file: {}", resolved_path.display()))?;
-
-        linked_scenes.push((lib_path, lib_blend.scene));
+        if resolved_path.exists() {
+            match load_linked_scene(&resolved_path, &lib_path) {
+                Ok(scene) => {
+                    linked_scenes.push((lib_path.clone(), scene));
+                }
+                Err(e) => {
+                    eprintln!("Warning: Failed to load linked library {}: {}", lib_path, e);
+                }
+            }
+        } else {
+            eprintln!(
+                "Warning: Linked library not found: {}",
+                resolved_path.display()
+            );
+        }
     }
 
-    // Now parse the main file with knowledge of linked content
-    let blend_file = load_from_memory_with_linked_content(&data, mesh_id_prefix, &linked_scenes)?;
+    // Extract library paths from linked_scenes for storage
+    let linked_library_paths: Vec<String> =
+        linked_scenes.iter().map(|(path, _)| path.clone()).collect();
 
-    Ok(blend_file)
+    load_from_memory_with_linked_scenes(&data, None, &linked_scenes, linked_library_paths)
 }
 
-/// Extract library paths from OB blocks that reference linked collections
-fn extract_library_paths(data: &[u8]) -> Result<Vec<String>> {
-    let blend_file = Blend::new(Cursor::new(data))
-        .map_err(|e| anyhow::anyhow!("Failed to parse .blend file: {:?}", e))?;
+fn load_linked_scene<P: AsRef<Path>>(path: P, _lib_path: &str) -> Result<MScene> {
+    let path = path.as_ref();
+    let data = std::fs::read(path)
+        .with_context(|| format!("Failed to read linked file: {}", path.display()))?;
 
-    let mut lib_paths = std::collections::HashSet::new();
+    let blend_file = Blend::new(Cursor::new(&data))
+        .map_err(|e| anyhow::anyhow!("Failed to parse linked .blend file: {:?}", e))?;
 
-    // Check OB blocks for dup_group references to linked collections
-    for instance in blend_file.instances_with_code(*b"OB") {
-        if instance.is_valid("dup_group") {
-            let dup = instance.get("dup_group");
-
-            // Check if dup_group has a library reference
-            if dup.is_valid("lib") {
-                let lib = dup.get("lib");
-
-                // Try different field names for the library path
-                let lib_path = if lib.is_valid("filepath") {
-                    lib.get_string("filepath")
-                } else if lib.is_valid("name") {
-                    lib.get_string("name")
-                } else {
-                    continue;
-                };
-
-                if !lib_path.is_empty() {
-                    lib_paths.insert(lib_path);
-                }
-            }
-        }
-
-        // Also check instance_collection for modern Blender files
-        if instance.is_valid("instance_collection") {
-            let coll = instance.get("instance_collection");
-            if coll.is_valid("id") && coll.get("id").is_valid("lib") {
-                let lib = coll.get("id").get("lib");
-                let lib_path = if lib.is_valid("filepath") {
-                    lib.get_string("filepath")
-                } else {
-                    continue;
-                };
-
-                if !lib_path.is_empty() {
-                    lib_paths.insert(lib_path);
-                }
-            }
-        }
+    let mut scene = MScene {
+        meshes: HashMap::new(),
+        materials: HashMap::new(),
+        root: MGroup {
+            name: None,
+            children: Vec::new(),
+            transform: None,
+        },
+    };
+    for instance in blend_file.instances_with_code(*b"ME") {
+        let (mesh_id, mesh) = extract_mesh_data(&instance, None)?;
+        scene.meshes.insert(mesh_id, mesh);
     }
 
-    // Also check CO and GR blocks for linked collections
+    // Extract collections from linked file
+    let mut collections = Vec::new();
+    let mut collection_names = std::collections::HashSet::new();
+
+    let mut add_collection = |coll: CollectionData| {
+        if collection_names.insert(coll.name.clone()) {
+            collections.push(coll);
+        }
+    };
+
+    // Extract CO blocks
     for instance in blend_file.instances_with_code(*b"CO") {
-        if instance.get("id").is_valid("lib") {
-            let lib = instance.get("id").get("lib");
-            if lib.is_valid("filepath") {
-                let lib_path = lib.get_string("filepath");
-                if !lib_path.is_empty() {
-                    lib_paths.insert(lib_path);
-                }
-            }
-        }
+        let collection = extract_collection_data(&instance)
+            .with_context(|| "Failed to extract collection from linked file")?;
+        add_collection(collection);
     }
 
+    // Extract GR blocks
     for instance in blend_file.instances_with_code(*b"GR") {
-        if instance.is_valid("id") && instance.get("id").is_valid("lib") {
-            let lib = instance.get("id").get("lib");
-            if lib.is_valid("filepath") {
-                let lib_path = lib.get_string("filepath");
-                if !lib_path.is_empty() {
-                    lib_paths.insert(lib_path);
-                }
-            }
-        }
+        let collection = extract_group_data(&instance)
+            .with_context(|| "Failed to extract group from linked file")?;
+        add_collection(collection);
     }
 
-    Ok(lib_paths.into_iter().collect())
+    // Build collection map
+    let mut collection_map: HashMap<String, CollectionData> = HashMap::new();
+    for collection in collections {
+        collection_map.insert(collection.name.clone(), collection);
+    }
+
+    // Build scene graph from collections (no instances needed for linked files)
+    // Each collection becomes a group in the root with its name preserved
+    for (collection_name, collection_data) in collection_map.iter() {
+        let mut group = build_group_from_collection(collection_data, &collection_map, None, None)?;
+        group.name = Some(collection_name.clone());
+        scene.root.children.push(MNode::MGroup(group));
+    }
+
+    Ok(scene)
 }
 
-/// Load mesh data from in-memory .blend file data
-pub fn load_from_memory(data: &[u8]) -> Result<BlendFile> {
-    load_from_memory_with_linked_content(data, None, &[])
-}
-
-fn load_from_memory_with_linked_content(
+fn load_from_memory_with_linked_scenes(
     data: &[u8],
     mesh_id_prefix: Option<&str>,
     linked_scenes: &[(String, MScene)],
+    linked_libraries: Vec<String>,
 ) -> Result<BlendFile> {
     let blend_file = Blend::new(Cursor::new(data))
         .map_err(|e| anyhow::anyhow!("Failed to parse .blend file: {:?}", e))?;
@@ -234,31 +226,14 @@ fn load_from_memory_with_linked_content(
         meshes: HashMap::new(),
         materials: HashMap::new(),
         root: MGroup {
+            name: None,
             children: Vec::new(),
             transform: None,
         },
     };
-
-    // Extract all meshes from this file
     for instance in blend_file.instances_with_code(*b"ME") {
-        let (mesh_id, mesh) = extract_mesh_data(&instance, mesh_id_prefix)
-            .with_context(|| "Failed to extract mesh data")?;
+        let (mesh_id, mesh) = extract_mesh_data(&instance, mesh_id_prefix)?;
         scene.meshes.insert(mesh_id, mesh);
-    }
-
-    // Extract collections
-    let mut collections = Vec::new();
-    for instance in blend_file.instances_with_code(*b"CO") {
-        let collection =
-            extract_collection_data(&instance).with_context(|| "Failed to extract collection")?;
-        collections.push(collection);
-    }
-
-    // Also extract GR (Group) blocks from older Blender versions
-    for instance in blend_file.instances_with_code(*b"GR") {
-        let collection =
-            extract_group_data(&instance).with_context(|| "Failed to extract group")?;
-        collections.push(collection);
     }
 
     // Extract instances
@@ -268,6 +243,65 @@ fn load_from_memory_with_linked_content(
             instances.push(instance_data);
         }
     }
+    println!("Total instances: {}", instances.len());
+
+    // Extract collections from main file
+    let mut collections = Vec::new();
+    let mut collection_names = std::collections::HashSet::new();
+
+    // Helper to add collection without duplicates
+    let mut add_collection = |coll: CollectionData| {
+        if collection_names.insert(coll.name.clone()) {
+            collections.push(coll);
+        }
+    };
+
+    // Extract ALL CO blocks from main file
+    for instance in blend_file.instances_with_code(*b"CO") {
+        let collection =
+            extract_collection_data(&instance).with_context(|| "Failed to extract collection")?;
+        add_collection(collection);
+    }
+
+    // Extract from Scene's master_collection hierarchy (but skip the master collection itself)
+    let mut scene_collections = Vec::new();
+    for scene_instance in blend_file.instances_with_code(*b"SC") {
+        if scene_instance.is_valid("master_collection") {
+            let master_coll = scene_instance.get("master_collection");
+            extract_collections_from_hierarchy(&master_coll, &mut scene_collections)?;
+        }
+    }
+    for coll in scene_collections {
+        // Skip "Scene Collection" which is the master collection container
+        if coll.name != "Scene Collection" {
+            add_collection(coll);
+        }
+    }
+
+    // Extract GR (Group) blocks
+    for instance in blend_file.instances_with_code(*b"GR") {
+        let collection =
+            extract_group_data(&instance).with_context(|| "Failed to extract group")?;
+        add_collection(collection);
+    }
+
+    for collection_data in &collections {
+        println!(
+            "Collection:\n\tname={}\n\tmesh_children={:?}\n\tcollection_children={:?}",
+            collection_data.name,
+            collection_data.mesh_children,
+            collection_data.collection_children
+        );
+    }
+    for collection_data in &collections {
+        println!(
+            "Collection:\n\tname={}\n\tmesh_children={:?}\n\tcollection_children={:?}",
+            collection_data.name,
+            collection_data.mesh_children,
+            collection_data.collection_children
+        );
+    }
+    println!("Total collections: {}", collections.len());
 
     // Build scene graph from collections and instances
     build_scene_graph(
@@ -283,6 +317,7 @@ fn load_from_memory_with_linked_content(
         pointer_size,
         endianness,
         scene,
+        linked_libraries,
     })
 }
 
@@ -291,13 +326,7 @@ fn extract_mesh_data(
     instance: &Instance,
     mesh_id_prefix: Option<&str>,
 ) -> Result<(MMeshID, MMesh)> {
-    let name = instance.get("id").get_string("name");
-
-    let clean_name = if name.len() > 2 && name.starts_with("ME") {
-        name[2..].to_string()
-    } else {
-        name
-    };
+    let clean_name = clean_blender_id(instance, "ME");
 
     let mesh_id = if let Some(prefix) = mesh_id_prefix {
         format!("{}{}", prefix, clean_name)
@@ -371,65 +400,22 @@ fn extract_mesh_data_v4(instance: &Instance, mut mesh: MMesh) -> Result<MMesh> {
 }
 
 fn extract_collection_data(instance: &Instance) -> Result<CollectionData> {
-    let name = instance.get("id").get_string("name");
+    let name = clean_blender_id(instance, "CO");
+    let mesh_children = extract_mesh_children(instance);
 
-    let clean_name = if name.len() > 2 && name.starts_with("CO") {
-        name[2..].to_string()
-    } else {
-        name
-    };
-
-    let mut mesh_children = Vec::new();
     let mut collection_children = Vec::new();
-
-    if instance.is_valid("gobject") {
-        let mut current = instance.get("gobject");
-
-        loop {
-            if current.is_valid("ob") {
-                let object = current.get("ob");
-
-                if object.is_valid("type") {
-                    let obj_type = object.get_i16("type") as i32;
-
-                    if obj_type == 1 && object.is_valid("data") {
-                        let mesh_data = object.get("data");
-                        let mesh_name = mesh_data.get("id").get_string("name");
-                        let clean_mesh_name = if mesh_name.len() > 2 && mesh_name.starts_with("ME")
-                        {
-                            mesh_name[2..].to_string()
-                        } else {
-                            mesh_name
-                        };
-                        mesh_children.push(clean_mesh_name);
-                    }
-                }
-            }
-
-            if !current.is_valid("next") {
-                break;
-            }
-            current = current.get("next");
-        }
-    }
-
     if instance.is_valid("children") {
         for child_coll_instance in instance.get_iter("children") {
             if child_coll_instance.is_valid("collection") {
                 let child_coll = child_coll_instance.get("collection");
-                let child_name = child_coll.get("id").get_string("name");
-                let clean_child_name = if child_name.len() > 2 && child_name.starts_with("CO") {
-                    child_name[2..].to_string()
-                } else {
-                    child_name
-                };
-                collection_children.push(clean_child_name);
+                let child_name = clean_blender_id(&child_coll, "CO");
+                collection_children.push(child_name);
             }
         }
     }
 
     Ok(CollectionData {
-        name: clean_name,
+        name,
         mesh_children,
         collection_children,
     })
@@ -437,52 +423,15 @@ fn extract_collection_data(instance: &Instance) -> Result<CollectionData> {
 
 fn extract_group_data(instance: &Instance) -> Result<CollectionData> {
     let name = if instance.is_valid("id") {
-        instance.get("id").get_string("name")
+        clean_blender_id(instance, "GR")
     } else {
         "Unknown".to_string()
     };
 
-    let clean_name = if name.len() > 2 && name.starts_with("GR") {
-        name[2..].to_string()
-    } else {
-        name
-    };
-
-    let mut mesh_children = Vec::new();
-
-    if instance.is_valid("gobject") {
-        let mut current = instance.get("gobject");
-
-        loop {
-            if current.is_valid("ob") {
-                let object = current.get("ob");
-
-                if object.is_valid("type") {
-                    let obj_type = object.get_i16("type") as i32;
-
-                    if obj_type == 1 && object.is_valid("data") {
-                        let mesh_data = object.get("data");
-                        let mesh_name = mesh_data.get("id").get_string("name");
-                        let clean_mesh_name = if mesh_name.len() > 2 && mesh_name.starts_with("ME")
-                        {
-                            mesh_name[2..].to_string()
-                        } else {
-                            mesh_name
-                        };
-                        mesh_children.push(clean_mesh_name);
-                    }
-                }
-            }
-
-            if !current.is_valid("next") {
-                break;
-            }
-            current = current.get("next");
-        }
-    }
+    let mesh_children = extract_mesh_children(instance);
 
     Ok(CollectionData {
-        name: clean_name,
+        name,
         mesh_children,
         collection_children: Vec::new(),
     })
@@ -495,123 +444,58 @@ fn extract_instance_data(instance: &Instance) -> Result<Option<InstanceData>> {
 
     let obj_type = instance.get_i16("type") as i32;
 
-    let (mesh_ref, collection_ref, collection_library_path) =
-        if obj_type == 1 && instance.is_valid("data") {
-            let mesh_data = instance.get("data");
-            let mesh_name = mesh_data.get("id").get_string("name");
-            let clean_mesh_name = if mesh_name.len() > 2 && mesh_name.starts_with("ME") {
-                mesh_name[2..].to_string()
-            } else {
-                mesh_name
-            };
-            (Some(clean_mesh_name), None, None)
-        } else if instance.is_valid("instance_collection") {
-            let coll = instance.get("instance_collection");
-            let coll_name = coll.get("id").get_string("name");
-            let clean_coll_name = if coll_name.len() > 2 && coll_name.starts_with("CO") {
-                coll_name[2..].to_string()
-            } else {
-                coll_name
-            };
-
-            // Check if collection is linked
-            let lib_path = if coll.is_valid("id") && coll.get("id").is_valid("lib") {
-                let lib = coll.get("id").get("lib");
-                if lib.is_valid("filepath") {
-                    Some(lib.get_string("filepath"))
+    let (mesh_ref, collection_ref, collection_library_path) = match obj_type {
+        OBJ_TYPE_MESH if instance.is_valid("data") => {
+            let mesh_name =
+                strip_blender_prefix(&instance.get("data").get("id").get_string("name"), "ME");
+            println!("Instance: mesh type, mesh_name={}", mesh_name);
+            (Some(mesh_name), None, None)
+        }
+        OBJ_TYPE_EMPTY => {
+            println!("Instance: empty type");
+            if instance.is_valid("instance_collection") {
+                let coll = instance.get("instance_collection");
+                println!("{:?}", coll);
+                let collection_name = clean_blender_id(&coll, "CO");
+                let lib_path = extract_library_path_from_id(&coll);
+                println!(
+                    "Instance: instance_collection, coll_name={}, lib_path={:?}",
+                    collection_name, lib_path
+                );
+                (None, Some(collection_name), lib_path)
+            } else if instance.is_valid("dup_group") {
+                let dup = instance.get("dup_group");
+                if dup.is_valid("name") {
+                    let collection_name = strip_blender_prefix(&dup.get_string("name"), "GR");
+                    println!("Collection name: {}", collection_name);
+                    let lib_path = extract_library_path(&dup);
+                    println!(
+                        "Instance: dup_group, coll_name={}, lib_path={:?}",
+                        collection_name, lib_path
+                    );
+                    (None, Some(collection_name), lib_path)
                 } else {
-                    None
+                    println!("Instance: dup_group with no name");
+                    (None, None, None)
                 }
             } else {
-                None
-            };
-
-            (None, Some(clean_coll_name), lib_path)
-        } else if instance.is_valid("dup_group") {
-            // Older Blender versions use dup_group (Group/GR blocks) instead of instance_collection
-            let dup = instance.get("dup_group");
-            if dup.is_valid("name") {
-                let coll_name = dup.get_string("name");
-                let clean_coll_name = if coll_name.len() > 2 && coll_name.starts_with("GR") {
-                    coll_name[2..].to_string()
-                } else {
-                    coll_name
-                };
-
-                // Check if dup_group is linked
-                let lib_path = if dup.is_valid("lib") {
-                    let lib = dup.get("lib");
-                    if lib.is_valid("filepath") {
-                        Some(lib.get_string("filepath"))
-                    } else if lib.is_valid("name") {
-                        Some(lib.get_string("name"))
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                };
-
-                (None, Some(clean_coll_name), lib_path)
-            } else {
+                println!("Instance: empty type");
                 (None, None, None)
             }
-        } else if obj_type == 0 {
-            // Empty object
-            (None, None, None)
-        } else {
+        }
+        _ => {
+            println!("Instance: unhandled type={}", obj_type);
             return Ok(None);
-        };
-
-    let position = if instance.is_valid("loc") {
-        let loc = instance.get_f32_vec("loc");
-        if loc.len() >= 3 {
-            Vec3::new(loc[0], loc[1], loc[2])
-        } else {
-            Vec3::ZERO
         }
-    } else {
-        Vec3::ZERO
     };
 
-    let rotation = if instance.is_valid("rot") {
-        let rot = instance.get_f32_vec("rot");
-        if rot.len() >= 3 {
-            Vec3::new(rot[0], rot[1], rot[2])
-        } else {
-            Vec3::ZERO
-        }
-    } else {
-        Vec3::ZERO
-    };
-
-    let scale = if instance.is_valid("scale") {
-        let s = instance.get_f32_vec("scale");
-        if s.len() >= 3 {
-            Vec3::new(s[0], s[1], s[2])
-        } else {
-            Vec3::ONE
-        }
-    } else if instance.is_valid("size") {
-        let s = instance.get_f32_vec("size");
-        if s.len() >= 3 {
-            Vec3::new(s[0], s[1], s[2])
-        } else {
-            Vec3::ONE
-        }
-    } else {
-        Vec3::ONE
-    };
+    let transform = extract_transform(instance);
 
     Ok(Some(InstanceData {
         mesh_ref,
         collection_ref,
         collection_library_path,
-        transform: MTransform {
-            translation: position,
-            rotation,
-            scale,
-        },
+        transform,
     }))
 }
 
@@ -637,50 +521,91 @@ fn build_scene_graph(
 
     // Process instances at the root level (not in collections)
     // For now, we'll add all instances to root and handle collection instances specially
+    println!("Instance count: {}", instances.len());
     for instance_data in instances {
-        if let Some(mesh_name) = instance_data.mesh_ref {
-            // Direct mesh instance
-            let mesh_id = if let Some(prefix) = mesh_id_prefix {
-                format!("{}{}", prefix, mesh_name)
-            } else {
-                mesh_name
-            };
+        match (&instance_data.mesh_ref, &instance_data.collection_ref) {
+            (Some(mesh_name), None) => {
+                // Direct mesh instance
+                let mesh_id = if let Some(prefix) = mesh_id_prefix {
+                    format!("{}{}", prefix, mesh_name)
+                } else {
+                    mesh_name.clone()
+                };
 
-            scene.root.children.push(MNode::MInstance(MInstance {
-                geometry_id: mesh_id,
-                material_id: None,
-                transform: Some(instance_data.transform),
-            }));
-        } else if let Some(collection_name) = instance_data.collection_ref {
-            // Collection instance - check if it's from a linked file
-            if let Some(lib_path) = &instance_data.collection_library_path {
-                // This is a linked collection - get it from the linked scene
-                if let Some(linked_scene) = linked_scene_map.get(lib_path) {
-                    // Clone the entire linked scene's root as a group with this instance's transform
-                    // Then merge only the meshes that are actually used
-                    let mut group = (*linked_scene).root.clone();
-                    group.transform = Some(instance_data.transform);
+                scene.root.children.push(MNode::MInstance(MInstance {
+                    geometry_id: mesh_id,
+                    material_id: None,
+                    transform: Some(instance_data.transform),
+                }));
+            }
+            (None, Some(collection_name)) => {
+                // Collection instance - check if it's from a linked file
+                match &instance_data.collection_library_path {
+                    Some(lib_path) => {
+                        // This is a linked collection - find it in the linked scene by name
+                        let Some(linked_scene) = linked_scene_map.get(lib_path) else {
+                            panic!(
+                                "Linked library '{}' not found for collection '{}'",
+                                lib_path, collection_name
+                            );
+                        };
 
-                    // Merge only meshes referenced in this group
-                    merge_meshes_from_nodes(
-                        &group.children,
-                        &linked_scene.meshes,
-                        &mut scene.meshes,
-                    );
+                        let Some(matching_group) = linked_scene.root.children.iter().find_map(|node| {
+                            if let MNode::MGroup(group) = node {
+                                if group.name.as_ref() == Some(collection_name) {
+                                    return Some(group);
+                                } else {
+                                    panic!(
+                                        "Warning: Collection '{}' not found in linked library '{}'",
+                                        collection_name, lib_path
+                                    );
+                                }
+                            }
+                            None
+                        }) else {
+                            panic!(
+                                "Warning: Collection '{}' not found in linked library '{}'",
+                                collection_name, lib_path
+                            );
+                        };
 
-                    scene.root.children.push(MNode::MGroup(group));
+                        let mut instance_group = matching_group.clone();
+                        instance_group.transform = Some(instance_data.transform);
+
+                        merge_meshes_from_nodes(
+                            &instance_group.children,
+                            &linked_scene.meshes,
+                            &mut scene.meshes,
+                        );
+
+                        scene.root.children.push(MNode::MGroup(instance_group));
+                    }
+                    None => {
+                        // Local collection - build from local collection data
+                        if let Some(collection_data) = collection_map.get(collection_name) {
+                            let group = build_group_from_collection(
+                                collection_data,
+                                &collection_map,
+                                Some(instance_data.transform),
+                                mesh_id_prefix,
+                            )?;
+                            scene.root.children.push(MNode::MGroup(group));
+                        } else {
+                            eprintln!("Collection ref: {}", collection_name);
+                            eprintln!("Collection map: {:?}", collection_map.keys());
+                            panic!(
+                                "Collection '{}' not found in main file for instance",
+                                collection_name
+                            );
+                        }
+                    }
                 }
-            } else {
-                // Local collection - build from local collection data
-                if let Some(collection_data) = collection_map.get(&collection_name) {
-                    let group = build_group_from_collection(
-                        collection_data,
-                        &collection_map,
-                        Some(instance_data.transform),
-                        mesh_id_prefix,
-                    )?;
-                    scene.root.children.push(MNode::MGroup(group));
-                }
+            }
+            (None, None) => {
+                panic!("Instance has neither mesh nor collection reference");
+            }
+            (Some(_), Some(_)) => {
+                panic!("Instance has both mesh and collection reference");
             }
         }
     }
@@ -750,7 +675,159 @@ fn build_group_from_collection(
     }
 
     Ok(MGroup {
+        name: None,
         children,
         transform,
     })
+}
+
+// Helper functions for extracting data from blend file instances
+
+/// Strip Blender ID prefix from a name (e.g., "MECube" -> "Cube")
+fn strip_blender_prefix(name: &str, prefix: &str) -> String {
+    if name.len() > 2 && name.starts_with(prefix) {
+        name[2..].to_string()
+    } else {
+        name.to_string()
+    }
+}
+
+/// Extract clean object name from Blender ID field
+fn clean_blender_id(instance: &Instance, expected_prefix: &str) -> String {
+    let name = instance.get("id").get_string("name");
+    strip_blender_prefix(&name, expected_prefix)
+}
+
+/// Extract library filepath from an Instance that may have a lib reference
+fn extract_library_path(instance: &Instance) -> Option<String> {
+    if !instance.is_valid("lib") {
+        return None;
+    }
+    let lib = instance.get("lib");
+    let path = if lib.is_valid("filepath") {
+        lib.get_string("filepath")
+    } else if lib.is_valid("name") {
+        lib.get_string("name")
+    } else {
+        return None;
+    };
+
+    if !path.is_empty() {
+        return Some(path);
+    }
+    None
+}
+
+/// Extract library path from an ID field
+fn extract_library_path_from_id(instance: &Instance) -> Option<String> {
+    if instance.is_valid("id") && instance.get("id").is_valid("lib") {
+        extract_library_path(&instance.get("id"))
+    } else {
+        None
+    }
+}
+
+/// Extract mesh name from an object instance
+fn extract_mesh_from_object(object: &Instance) -> Option<String> {
+    if !object.is_valid("type") {
+        return None;
+    }
+
+    let obj_type = object.get_i16("type") as i32;
+    if obj_type != OBJ_TYPE_MESH || !object.is_valid("data") {
+        return None;
+    }
+
+    let mesh_data = object.get("data");
+    let mesh_name = mesh_data.get("id").get_string("name");
+    Some(strip_blender_prefix(&mesh_name, "ME"))
+}
+
+/// Iterator over mesh children in a collection's gobject list
+fn extract_mesh_children(instance: &Instance) -> Vec<String> {
+    let mut mesh_children = Vec::new();
+
+    if !instance.is_valid("gobject") {
+        return mesh_children;
+    }
+
+    let mut current = instance.get("gobject");
+    loop {
+        if current.is_valid("ob") {
+            if let Some(mesh_name) = extract_mesh_from_object(&current.get("ob")) {
+                mesh_children.push(mesh_name);
+            }
+        }
+
+        if !current.is_valid("next") {
+            break;
+        }
+        current = current.get("next");
+    }
+
+    mesh_children
+}
+
+/// Extract transform data from an instance
+fn extract_transform(instance: &Instance) -> MTransform {
+    let translation = extract_vec3(instance, "loc", Vec3::ZERO);
+    let rotation = extract_vec3(instance, "rot", Vec3::ZERO);
+    let scale =
+        extract_vec3(instance, "scale", Vec3::ONE).max(extract_vec3(instance, "size", Vec3::ONE));
+
+    MTransform {
+        translation,
+        rotation,
+        scale,
+    }
+}
+
+/// Extract a Vec3 from an instance field
+fn extract_vec3(instance: &Instance, field: &str, default: Vec3) -> Vec3 {
+    if !instance.is_valid(field) {
+        return default;
+    }
+
+    let vec = instance.get_f32_vec(field);
+    if vec.len() >= 3 {
+        Vec3::new(vec[0], vec[1], vec[2])
+    } else {
+        default
+    }
+}
+
+/// Recursively extract collections from a Scene's master_collection hierarchy
+fn extract_collections_from_hierarchy(
+    collection_instance: &Instance,
+    collections: &mut Vec<CollectionData>,
+) -> Result<()> {
+    // Extract the collection itself
+    let collection_data = if collection_instance.is_valid("id") {
+        let id_name = collection_instance.get("id").get_string("name");
+        // Determine if it's a GR or CO block by the prefix
+        if id_name.starts_with("GR") {
+            extract_group_data(collection_instance)?
+        } else if id_name.starts_with("CO") {
+            extract_collection_data(collection_instance)?
+        } else {
+            // Fallback: treat as collection
+            extract_collection_data(collection_instance)?
+        }
+    } else {
+        return Ok(());
+    };
+
+    collections.push(collection_data);
+
+    // Recursively process children
+    if collection_instance.is_valid("children") {
+        for child in collection_instance.get_iter("children") {
+            if child.is_valid("collection") {
+                let child_coll = child.get("collection");
+                extract_collections_from_hierarchy(&child_coll, collections)?;
+            }
+        }
+    }
+
+    Ok(())
 }

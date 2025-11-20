@@ -16,6 +16,7 @@
 
 - Prefer early returns to deeply nested conditionals
 - If you create a backup file during a task, be sure to remove it when the task is done
+- If possible, helper functions should be at the end of the file
 
 ### Testing style
 

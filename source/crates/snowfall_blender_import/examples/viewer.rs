@@ -4,7 +4,7 @@ use bevy::render::render_asset::RenderAssetUsages;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy::window::{Cursor, CursorGrabMode};
 use bevy_flycam::prelude::*;
-use snowfall_blender_import::{MNode, load_from_file_with_links};
+use snowfall_blender_import::{MNode, load_from_file};
 use std::env;
 
 fn main() -> Result<()> {
@@ -17,7 +17,7 @@ fn main() -> Result<()> {
     let blend_path = &args[1];
     println!("Loading blend file: {}", blend_path);
 
-    let blend_file = load_from_file_with_links(blend_path)
+    let blend_file = load_from_file(blend_path)
         .with_context(|| format!("Failed to load blend file: {}", blend_path))?;
 
     println!("Loaded Blender {} file", blend_file.version_string());

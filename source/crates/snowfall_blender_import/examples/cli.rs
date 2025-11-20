@@ -1,5 +1,5 @@
 use anyhow::Result;
-use snowfall_blender_import::{MNode, load_from_file_with_links};
+use snowfall_blender_import::{MNode, load_from_file};
 use std::env;
 
 fn main() -> Result<()> {
@@ -13,7 +13,7 @@ fn main() -> Result<()> {
     let filename = &args[1];
     println!("Loading: {}", filename);
 
-    let blend_file = load_from_file_with_links(filename)?;
+    let blend_file = load_from_file(filename)?;
 
     println!("\n=== File Information ===");
     println!("Blender Version: {}", blend_file.version_string());
@@ -29,6 +29,11 @@ fn main() -> Result<()> {
             mesh.vertex_count(),
             mesh.triangle_count()
         );
+    }
+
+    println!("\n=== Linked Libraries ===");
+    for lib_path in &blend_file.linked_libraries {
+        println!("  \"{}\"", lib_path);
     }
 
     println!("\n=== Scene Hierarchy ===");
