@@ -319,6 +319,7 @@ fn load_from_memory_with_linked_scenes(
         endianness,
         scene,
         linked_libraries,
+        collections: Vec::new(),
     })
 }
 
