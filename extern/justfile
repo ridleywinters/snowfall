@@ -4,6 +4,7 @@ default:
 
 # decompress external assets
 expand:
+    which ffmpeg
     test -d "./expanded/tiny_textures" || just expand-tiny-textures
     test -d "./expanded/raven_fantasy_icons_free" || just expand-raven_fantasy_icons_free
     test -d "./expanded/rpg_sound_pack" || just expand-rpg_sound_pack

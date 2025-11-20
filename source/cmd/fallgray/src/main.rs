@@ -14,21 +14,25 @@ mod world;
 use actor::ActorPlugin;
 use ai::AIPlugin;
 use bevy::prelude::*;
-use camera::{CameraPlugin, Player, PlayerLightPlugin, update_camera_shake};
+use camera::{CameraPlugin, PlayerLightPlugin, update_camera_shake};
 use combat::{update_blood_particles, update_damage_numbers, update_status_effects};
 use console::*;
-use game_state::{GamePlayEntity, GameState, GameStatePlugin};
-use hud::{Toolbar, startup_ui, update_ui};
+use game_state::{GameState, GameStatePlugin};
+use hud::{startup_ui, update_ui};
 use item::ItemPlugin;
 use menu::MenuPlugin;
 use rendering::update_billboards;
-use scripting::{CVarRegistry, ScriptingPlugin};
+use scripting::ScriptingPlugin;
 use weapon::WeaponPlugin;
-use world::{Map, MapEditorPlugin, WorldPlugin};
+use world::{MapEditorPlugin, WorldPlugin};
 
 // MapFile and MapData are now defined in map.rs
 
 fn main() {
+    bevy_main();
+}
+
+fn bevy_main() {
     // Get asset path from REPO_ROOT environment variable
     let asset_path = std::env::var("REPO_ROOT")
         .map(|repo_root| format!("{}/source/assets", repo_root))
