@@ -51,8 +51,9 @@ pub struct BlendFile {
     pub pointer_size: PointerSize,
     pub endianness: Endianness,
 
-    pub scene: MScene,
     pub linked_libraries: Vec<String>,
+    pub collections: Vec<MGroup>,
+    pub scene: MScene,
 }
 
 impl BlendFile {
