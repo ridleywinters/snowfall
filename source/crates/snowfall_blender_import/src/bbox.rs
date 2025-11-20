@@ -41,4 +41,28 @@ impl BBox {
     pub fn size(&self) -> Vec3 {
         self.max - self.min
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.min.x > self.max.x || self.min.y > self.max.y || self.min.z > self.max.z
+    }
+
+    pub fn merge(&self, other: &BBox) -> BBox {
+        if self.is_empty() {
+            return *other;
+        }
+        if other.is_empty() {
+            return *self;
+        }
+        BBox {
+            min: self.min.min(other.min),
+            max: self.max.max(other.max),
+        }
+    }
+
+    pub fn sphere_radius(&self) -> f32 {
+        if self.is_empty() {
+            return 0.0;
+        }
+        (self.max - self.min).length() * 0.5
+    }
 }
