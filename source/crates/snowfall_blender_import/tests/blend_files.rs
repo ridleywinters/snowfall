@@ -57,15 +57,26 @@ fn test_blend_files() {
         );
 
         assert_eq!(
-            blend_file.meshes.len(),
+            blend_file.scene.meshes.len(),
             test_case.expected.meshes.len(),
             "Mesh count mismatch for {}",
             test_case.name
         );
 
-        for (mesh, expected_mesh) in blend_file.meshes.iter().zip(&test_case.expected.meshes) {
+        for expected_mesh in &test_case.expected.meshes {
+            let mesh = blend_file
+                .scene
+                .meshes
+                .get(&expected_mesh.name)
+                .unwrap_or_else(|| {
+                    panic!(
+                        "Mesh '{}' not found for {}",
+                        expected_mesh.name, test_case.name
+                    )
+                });
+
             assert_eq!(
-                mesh.name, expected_mesh.name,
+                mesh.id, expected_mesh.name,
                 "Mesh name mismatch for {}",
                 test_case.name
             );
@@ -74,14 +85,14 @@ fn test_blend_files() {
                 expected_mesh.vertex_count,
                 "Vertex count mismatch for {} mesh '{}'",
                 test_case.name,
-                mesh.name
+                mesh.id
             );
             assert_eq!(
                 mesh.triangle_count(),
                 expected_mesh.triangle_count,
                 "Triangle count mismatch for {} mesh '{}'",
                 test_case.name,
-                mesh.name
+                mesh.id
             );
 
             for (i, expected_pos) in expected_mesh.positions.iter().enumerate() {
@@ -93,7 +104,7 @@ fn test_blend_files() {
                     "Position mismatch at vertex {} for {} mesh '{}': expected ({}, {}, {}), got ({}, {}, {})",
                     i,
                     test_case.name,
-                    mesh.name,
+                    mesh.id,
                     expected_pos[0],
                     expected_pos[1],
                     expected_pos[2],
@@ -108,7 +119,7 @@ fn test_blend_files() {
                 &expected_mesh.first_triangle,
                 "First triangle indices mismatch for {} mesh '{}'",
                 test_case.name,
-                mesh.name
+                mesh.id
             );
         }
     }
