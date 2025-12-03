@@ -88,10 +88,7 @@ impl ApplicationHandler for Application {
                 let Some(window) = self.window.as_ref() else {
                     return;
                 };
-                let size = window.inner_size();
-                let (width, height) = (size.width as usize, size.height as usize);
-
-                if let Err(e) = self.engine.run_frame(width, height) {
+                if let Err(e) = self.engine.run_frame(window.clone()) {
                     eprintln!("Error during frame render: {:?}", e);
                     event_loop.exit();
                     return;
@@ -99,10 +96,10 @@ impl ApplicationHandler for Application {
 
                 window.request_redraw();
             }
-            WindowEvent::KeyboardInput { event, .. } => {}
-            WindowEvent::CursorMoved { position, .. } => {}
-            WindowEvent::MouseInput { state, button, .. } => {}
-            WindowEvent::MouseWheel { delta, .. } => {}
+            WindowEvent::KeyboardInput { .. } => {}
+            WindowEvent::CursorMoved { .. } => {}
+            WindowEvent::MouseInput { .. } => {}
+            WindowEvent::MouseWheel { .. } => {}
             _ => (),
         }
     }

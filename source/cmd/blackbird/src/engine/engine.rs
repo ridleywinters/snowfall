@@ -1,11 +1,14 @@
 use crate::core;
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
+use winit::window::Window;
 
 #[derive(Debug, Clone)]
 pub enum EngineError {
     Generic(String),
 }
+
+pub type EngineWindow = Arc<Window>;
 
 pub struct Engine {
     pub title: String,
@@ -34,7 +37,12 @@ impl Engine {
         super::prelude::run_event_loop(self.clone());
     }
 
-    pub fn run_frame(&self, width: usize, height: usize) -> Result<(), EngineError> {
+    pub fn run_frame(&self, window: EngineWindow) -> Result<(), EngineError> {
+        let (width, height) = {
+            let size = window.inner_size();
+            (size.width as usize, size.height as usize)
+        };
+
         let ctx = {
             let mut state = self.internal_state.lock().unwrap();
             state.current_frame += 1;
@@ -43,6 +51,7 @@ impl Engine {
                 frame: state.current_frame,
                 surface_width: width,
                 surface_height: height,
+                window: window.clone(),
                 queue: &self.queue,
             }
         };
@@ -107,6 +116,7 @@ pub struct EngineCtx<'a> {
     pub surface_width: usize,
     pub surface_height: usize,
 
+    pub window: EngineWindow,
     pub queue: &'a EngineQueue,
 }
 
