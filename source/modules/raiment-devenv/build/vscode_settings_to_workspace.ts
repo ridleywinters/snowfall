@@ -7,6 +7,7 @@
 
 import { sh } from "@raiment-shell";
 import { parse as parseJsonc } from "jsr:@std/jsonc";
+import { core } from "@raiment-core";
 
 async function main() {
     const args = Deno.args;
@@ -77,9 +78,9 @@ async function main() {
         }
     }
 
-    let settingsJson: Record<string, unknown>;
+    let settingsJSON: Record<string, unknown>;
     try {
-        settingsJson = parseJsonc(settingsContent) as Record<string, unknown>;
+        settingsJSON = parseJsonc(settingsContent) as Record<string, unknown>;
     } catch (error) {
         sh.cprintln(
             `[!](red) Invalid JSONC in settings file: [${settingsPath}](filename)`,
@@ -99,9 +100,9 @@ async function main() {
     }
 
     // Parse workspace file
-    let workspaceJson: Record<string, unknown>;
+    let workspaceJSON: Record<string, unknown>;
     try {
-        workspaceJson = parseJsonc(workspaceContent) as Record<string, unknown>;
+        workspaceJSON = parseJsonc(workspaceContent) as Record<string, unknown>;
     } catch (error) {
         sh.cprintln(
             `[!](red) Invalid JSONC in workspace file: [${workspacePath}](filename)`,
@@ -110,10 +111,11 @@ async function main() {
     }
 
     // Replace settings in workspace
-    workspaceJson.settings = settingsJson;
+    workspaceJSON.settings ??= {};
+    core.assignDeep(workspaceJSON.settings, settingsJSON);
 
     // Write updated workspace file
-    const updatedContent = JSON.stringify(workspaceJson, null, 4) + "\n";
+    const updatedContent = JSON.stringify(workspaceJSON, null, 4) + "\n";
     await Deno.writeTextFile(workspacePath, updatedContent);
 
     sh.cprintln(
