@@ -1,0 +1,199 @@
+{
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
+        "explorer.incrementalNaming": "smart",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "never"
+        },
+        "editor.minimap.enabled": false,
+        "editor.inlayHints.enabled": "offUnlessPressed",
+        "deno.enable": true,
+        "typescript.preferences.importModuleSpecifier": "shortest",
+        "javascript.preferences.importModuleSpecifier": "shortest",
+        "rust-analyzer.lens.enable": false,
+        "rust-analyzer.inlayHints.typeHints.enable": true,
+        "rust-analyzer.inlayHints.parameterHints.enable": false,
+        "rust-analyzer.inlayHints.chainingHints.enable": false,
+        "rust-analyzer.inlayHints.lifetimeElisionHints.enable": "never",
+        "rust-analyzer.inlayHints.closureReturnTypeHints.enable": "never",
+        "rust-analyzer.inlayHints.reborrowHints.enable": "never",
+        "chat.tools.autoApprove": true,
+        "chat.agent.maxRequests": 1000,
+        "github.copilot.chat.codeGeneration.model": "claude-sonnet-4.5",
+        "github.copilot.chat.model": "claude-sonnet-4.5",
+        "window.zoomLevel": 0.75,
+        "editor.fontSize": 15,
+        "[markdown]": {
+            "editor.defaultFormatter": "esbenp.prettier-vscode",
+            "editor.wordWrap": "wordWrapColumn",
+            "editor.wordWrapColumn": 80,
+            "editor.indentSize": 4
+        },
+        "[typescript]": {
+            "editor.defaultFormatter": "denoland.vscode-deno"
+        },
+        "[typescriptreact]": {
+            "editor.defaultFormatter": "denoland.vscode-deno"
+        },
+        "[javascript]": {
+            "editor.defaultFormatter": "denoland.vscode-deno"
+        },
+        "[javascriptreact]": {
+            "editor.defaultFormatter": "denoland.vscode-deno"
+        },
+        "[json]": {
+            "editor.defaultFormatter": "denoland.vscode-deno"
+        },
+        "[jsonc]": {
+            "editor.defaultFormatter": "denoland.vscode-deno"
+        },
+        "workbench.colorCustomizations": {
+            "editor.background": "#131212",
+            "editorLineNumber.foreground": "#29283c",
+            "editorLineNumber.activeForeground": "#8b4b4b",
+            "editorBracketHighlight.foreground1": "#a6605b",
+            "editorBracketHighlight.foreground2": "#7a214a",
+            "editorBracketHighlight.foreground3": "#8e5c5f",
+            "editorBracketHighlight.foreground4": "#7c1123",
+            "editorBracketHighlight.foreground5": "#765863",
+            "editorBracketHighlight.foreground6": "#3260b5",
+            "diffEditor.insertedTextBackground": "#0c3f0c34",
+            "diffEditor.removedTextBackground": "#ff000033",
+            "diffEditor.insertedLineBackground": "#00ff0015",
+            "diffEditor.removedLineBackground": "#ff000015"
+        },
+        "editor.semanticTokenColorCustomizations": {
+            "enabled": false,
+            "rules": {
+                "*.mutable": {
+                    "underline": false
+                }
+            }
+        },
+        "editor.tokenColorCustomizations": {
+            "textMateRules": [
+                {
+                    "scope": "string",
+                    "settings": {
+                        "foreground": "#eab257"
+                    }
+                },
+                {
+                    "scope": "string.template",
+                    "settings": {
+                        "foreground": "#a6de75"
+                    }
+                },
+                {
+                    "scope": "constant.numeric",
+                    "settings": {
+                        "foreground": "#278bd3"
+                    }
+                },
+                {
+                    "scope": "keyword",
+                    "settings": {
+                        "foreground": "#96a3ae"
+                    }
+                },
+                {
+                    "scope": [
+                        "storage.type.rust",
+                        "storage.modifier.mut.rust"
+                    ],
+                    "settings": {
+                        "foreground": "#919a66"
+                    }
+                },
+                {
+                    "scope": [
+                        "keyword.control",
+                        "punctuation.brackets.angle.rust"
+                    ],
+                    "settings": {
+                        "foreground": "#a0bf7b"
+                    }
+                },
+                {
+                    "scope": [
+                        "keyword.other.rust"
+                    ],
+                    "settings": {
+                        "foreground": "#d57f73"
+                    }
+                },
+                {
+                    "scope": "variable",
+                    "settings": {
+                        "foreground": "#789eae"
+                    }
+                },
+                {
+                    "scope": "entity.name.function",
+                    "settings": {
+                        "foreground": "#22b1ac"
+                    }
+                },
+                {
+                    "scope": "entity.name.type",
+                    "settings": {
+                        "foreground": "#67a690"
+                    }
+                },
+                {
+                    "scope": "support.type, support.class",
+                    "settings": {
+                        "foreground": "#d89ba5"
+                    }
+                },
+                {
+                    "scope": "support.type.property-name",
+                    "settings": {
+                        "foreground": "#4db6d0"
+                    }
+                },
+                {
+                    "scope": "comment",
+                    "settings": {
+                        "foreground": "#5d4949"
+                    }
+                },
+                {
+                    "scope": "keyword.operator",
+                    "settings": {
+                        "foreground": "#6d8e74"
+                    }
+                },
+                {
+                    "scope": "meta.attribute.rust",
+                    "settings": {
+                        "foreground": "#6d5d77"
+                    }
+                },
+                {
+                    "scope": [
+                        "comment.line.documentation.rust",
+                        "comment.block.documentation.rust",
+                        "comment.documentation"
+                    ],
+                    "settings": {
+                        "foreground": "#8a1e52"
+                    }
+                },
+                {
+                    "scope": [
+                        "source.rust"
+                    ],
+                    "settings": {
+                        "foreground": "#a2ada6"
+                    }
+                }
+            ]
+        }
+    }
+}

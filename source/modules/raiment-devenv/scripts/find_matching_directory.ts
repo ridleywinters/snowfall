@@ -136,6 +136,12 @@ function findClosestMatch(
         if (score < bestScore) {
             bestScore = score;
             bestMatch = candidate;
+        } else if (score === bestScore) {
+            const bestFrag = bestMatch.split("/").pop() ?? "";
+            const candidateFrag = candidate.split("/").pop() ?? "";
+            if (candidateFrag.length < bestFrag.length) {
+                bestMatch = candidate;
+            }
         }
     }
 

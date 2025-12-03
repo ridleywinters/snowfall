@@ -1,5 +1,6 @@
 mod application;
 mod run_event_loop;
+mod soft_panic_hook;
 mod window_state;
 
 pub mod prelude {
@@ -12,8 +13,8 @@ pub mod internal {
     pub use super::prelude::*;
     pub use super::window_state::*;
 
-    pub use crate::Engine;
     pub use crate::core::*;
+    pub use crate::engine::prelude::Engine;
 
     pub use std::sync::Arc;
     pub use winit::application::ApplicationHandler;

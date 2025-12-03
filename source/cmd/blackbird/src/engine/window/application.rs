@@ -1,7 +1,9 @@
 /// Application is the concrete implementation that implements the
 /// `ApplicationHandler` trait to handle events from the event loop.
 ///
-/// It is intended to fully encapsulate the winit implementation details.
+/// It is intended to as fully as possible encapsulate the winit implementation
+/// details so the user of the engine does not need to directly interact with
+/// winit.
 ///
 pub use super::internal::*;
 
@@ -52,7 +54,7 @@ impl ApplicationHandler for Application {
     }
 
     fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
-        // This is somewhat redundant since RedrawRequested also calls
+        // This is possibly redundant since RedrawRequested also calls
         // request_redraw.
         let Some(window) = self.window.as_ref() else {
             return;
@@ -81,15 +83,20 @@ impl ApplicationHandler for Application {
                 /*let (Some(window), Some(handler)) = (self.window.as_ref(), self.handler.as_mut())
                 else {
                     return;
-                };
+                };*/
 
-                let size = window.inner_size();
-                handler
-                    .run_frame(size.width as usize, size.height as usize)
-                    .expect("Failed to run frame");*/
                 let Some(window) = self.window.as_ref() else {
                     return;
                 };
+                let size = window.inner_size();
+                let (width, height) = (size.width as usize, size.height as usize);
+
+                if let Err(e) = self.engine.run_frame(width, height) {
+                    eprintln!("Error during frame render: {:?}", e);
+                    event_loop.exit();
+                    return;
+                }
+
                 window.request_redraw();
             }
             WindowEvent::KeyboardInput { event, .. } => {}

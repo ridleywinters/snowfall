@@ -32,6 +32,12 @@ Rust core using Bevy and TypeScript (Deno) for scripting and tools.
 
 Architecturally, it is by designed to prefer simplicity, modularity, and code maintainability over raw runtime efficiency or unique functionality. Ease of contribution is a priority for the codebase as well as the game content.
 
+## Feature map
+
+- [ ] Native `.blend` asset loading
+- [ ] Deno/TypeScript scripting
+- [ ] Extrude faces dynamically
+
 ## Roadmap
 
 The major phases of development:

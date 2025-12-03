@@ -1,26 +1,17 @@
 mod core;
 mod engine;
-pub use std::sync::Arc;
 
-pub struct Engine {
-    title: String,
-    development_mode: bool,
-    local_storage: core::LocalStorage,
-}
-
-impl Engine {
-    fn run(self: Arc<Engine>) {
-        engine::prelude::init();
-        engine::prelude::run_event_loop(self.clone());
-    }
-}
+use engine::prelude::Engine;
 
 fn main() {
-    let engine = Arc::new(Engine {
-        title: "Snowfall".into(),
-        development_mode: true,
-        local_storage: core::LocalStorage::new(),
-    });
+    let engine = Engine::new("Snowfall (blackbird)".into(), true);
     println!("{}", engine.title);
+    engine.task_once(|_ctx| {
+        println!("Engine started!");
+    });
+    engine.task_frame(|ctx| {
+        println!("Frame {}", ctx.frame);
+        true
+    });
     engine.run();
 }

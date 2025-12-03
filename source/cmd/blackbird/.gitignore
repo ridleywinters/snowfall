@@ -1,2 +1,6 @@
 target/
 runtime/
+/build
+/target
+/node_modules
+/.vscode
