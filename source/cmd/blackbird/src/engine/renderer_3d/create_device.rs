@@ -1,82 +1,6 @@
-use winit::window;
-
 use crate::engine::prelude::EngineWindow;
 
-pub struct Renderer3D {}
-
-impl Renderer3D {
-    pub fn new(window: EngineWindow) -> Self {
-        // --- ⚠️ WARNING: Poll the future manually... ------------------------
-        //
-        // It feels a bit risky "hiding" a polling call in here, but it hides
-        // the calling code from needing to worry about the async hand-off
-        // between winit and wgpu. I'm new enough to Rust to not know how bad of
-        // an idea this is!
-        //
-        let future = create_device(window);
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        let (surface, surface_config, device, queue) = rt.block_on(future);
-
-        let _ = DepthTexture::create_depth_texture(
-            &device,
-            surface_config.width,
-            surface_config.height,
-        );
-
-        Self {}
-    }
-}
-
-#[derive(Debug)]
-pub struct DepthTexture {
-    pub texture: wgpu::Texture,
-    pub view: wgpu::TextureView,
-    pub sampler: wgpu::Sampler,
-}
-
-impl DepthTexture {
-    pub fn create_depth_texture(device: &wgpu::Device, width: u32, height: u32) -> Self {
-        let size = wgpu::Extent3d {
-            width: width.max(1),
-            height: height.max(1),
-            depth_or_array_layers: 1,
-        };
-        let desc = wgpu::TextureDescriptor {
-            label: Some("depth_texture"),
-            size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Depth32Float,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT // 3.
-                | wgpu::TextureUsages::TEXTURE_BINDING,
-            view_formats: &[],
-        };
-        let texture = device.create_texture(&desc);
-
-        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Nearest,
-            compare: Some(wgpu::CompareFunction::LessEqual), // 5.
-            lod_min_clamp: 0.0,
-            lod_max_clamp: 100.0,
-            ..Default::default()
-        });
-
-        Self {
-            texture,
-            view,
-            sampler,
-        }
-    }
-}
-
-fn create_surface<'a>(window: EngineWindow) -> (wgpu::Instance, wgpu::Surface<'a>) {
+pub fn create_surface<'a>(window: EngineWindow) -> (wgpu::Instance, wgpu::Surface<'a>) {
     let backend_sets = vec![wgpu::Backends::PRIMARY, wgpu::Backends::SECONDARY];
     for backends in backend_sets {
         // The instance is the top-level wgpu connection to a specific backend: e.g.
@@ -97,7 +21,7 @@ fn create_surface<'a>(window: EngineWindow) -> (wgpu::Instance, wgpu::Surface<'a
     panic!("Could not create surface; no valid backends");
 }
 
-fn select_surface_format(surface_caps: &wgpu::SurfaceCapabilities) -> wgpu::TextureFormat {
+pub fn select_surface_format(surface_caps: &wgpu::SurfaceCapabilities) -> wgpu::TextureFormat {
     let present_modes: Vec<String> = surface_caps
         .present_modes
         .iter()
@@ -134,14 +58,13 @@ fn select_surface_format(surface_caps: &wgpu::SurfaceCapabilities) -> wgpu::Text
         .unwrap_or(surface_caps.formats[0])
 }
 
-async fn create_device(
+pub async fn create_device(
     target_window: EngineWindow,
 ) -> (
     wgpu::Surface<'static>,
     wgpu::SurfaceConfiguration,
     wgpu::Device,
     wgpu::Queue,
-    //DepthTexture,
 ) {
     println!("Initializing WGPU instance...");
 
@@ -242,7 +165,6 @@ async fn create_device(
         format: surface_format,
         width: size.width,
         height: size.height,
-        //present_mode: surface_caps.present_modes[0],
         present_mode: wgpu::PresentMode::AutoNoVsync,
         alpha_mode: surface_caps.alpha_modes[0],
         view_formats: vec![],
@@ -252,13 +174,5 @@ async fn create_device(
 
     surface.configure(&device, &surface_config);
 
-    //let depth_texture = DepthTexture::create_depth_texture(&device, size.width, size.height);
-
-    (
-        surface,
-        surface_config,
-        device,
-        queue,
-        //depth_texture
-    )
+    (surface, surface_config, device, queue)
 }

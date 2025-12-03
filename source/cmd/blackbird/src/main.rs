@@ -1,9 +1,7 @@
 mod core;
 mod engine;
-mod renderer_3d;
 
-use engine::prelude::{Engine, EngineWindow};
-use renderer_3d::Renderer3D;
+use engine::prelude::{Engine, EngineWindow, Renderer3D};
 
 fn main() {
     let engine = Engine::new("Snowfall (blackbird)".into(), true);
