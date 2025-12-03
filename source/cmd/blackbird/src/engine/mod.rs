@@ -4,7 +4,7 @@ mod window;
 
 pub mod prelude {
     pub use super::engine::*;
-    pub use super::renderer_3d::Renderer3D;
+    pub use super::renderer_3d::{CameraPerspective, Renderer3D, Scene3D};
     pub use super::window::prelude::*;
 }
 

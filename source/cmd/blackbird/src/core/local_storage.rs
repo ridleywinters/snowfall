@@ -27,7 +27,7 @@ impl LocalStorage {
     }
 
     pub fn get<T: DeserializeOwned>(&self, key: &str) -> Option<T> {
-        let (path, filepath) = self.get_paths(key);
+        let (_path, filepath) = self.get_paths(key);
         if !filepath.exists() {
             return None;
         }
