@@ -15,6 +15,9 @@ export function handleKeyMapping<
     table: KeyMappingTable<T>,
 ): void {
     let key = evt.key;
+    if (key === " ") {
+        key = "Space";
+    }
     if (evt.shiftKey) {
         key = `Shift+${key}`;
     }

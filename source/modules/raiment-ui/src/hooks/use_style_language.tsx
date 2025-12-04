@@ -433,6 +433,10 @@ const RULES_TABLE_SOURCE: StyleLanguageRule[] = [
         /opacity-([0-9]+)%?/,
         (m) => `opacity: ${parseInt(m[1]) / 100};`,
     ],
+    [
+        /opacity-([0-9\.]+)/,
+        (m) => `opacity: ${m[1]};`,
+    ],
 
     [
         /fg-(white|black|red|green|blue)/,
