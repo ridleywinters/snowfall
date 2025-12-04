@@ -1,10 +1,7 @@
 use super::depth_texture::DepthTexture;
 use super::internal::*;
+use super::scene_3d::Scene3D;
 use crate::engine::prelude::EngineWindow;
-
-pub struct Scene3D {
-    pub camera: CameraPerspective,
-}
 
 pub struct Renderer3D {
     // --- Device ---
@@ -13,6 +10,9 @@ pub struct Renderer3D {
     pub surface: wgpu::Surface<'static>,
     pub surface_config: wgpu::SurfaceConfiguration,
     pub depth_texture: DepthTexture,
+
+    // --- Pipelines ---
+    pub pipeline_triangles: Option<PipelineTriangles>,
 }
 
 impl Renderer3D {
@@ -40,6 +40,8 @@ impl Renderer3D {
             surface,
             surface_config,
             depth_texture,
+
+            pipeline_triangles: None,
         }
     }
 
@@ -60,17 +62,38 @@ impl Renderer3D {
 
         scene.camera.update();
 
-        // Render pass 1
-        {
-            run_render_pass(
-                &mut encoder,
-                &color_texture_view,
-                &self.depth_texture,
-                |render_pass| {
-                    // Render pass commands go here
-                },
-            );
-        }
+        run_render_pass(
+            &mut encoder,
+            &color_texture_view,
+            &self.depth_texture,
+            |pass| {
+                if !scene.triangle_buffers.is_empty() {
+                    let pipeline = self.pipeline_triangles.get_or_insert_with(|| {
+                        let start_time = std::time::Instant::now();
+                        let pipeline = PipelineTriangles::new(
+                            &self.device,
+                            &self.surface_config,
+                            self.depth_texture.texture.format(),
+                            &scene.camera,
+                        );
+
+                        println!(
+                            "PipelineTriangles created in {} ms",
+                            start_time.elapsed().as_millis()
+                        );
+                        pipeline
+                    });
+                    pass.set_pipeline(&pipeline.pipeline);
+                    pass.set_bind_group(0, &pipeline.bind_group, &[]);
+
+                    scene.camera.activate(&self.device, &self.queue);
+
+                    for triangle_buffer in &scene.triangle_buffers {
+                        triangle_buffer.activate(pass);
+                    }
+                }
+            },
+        );
     }
 }
 

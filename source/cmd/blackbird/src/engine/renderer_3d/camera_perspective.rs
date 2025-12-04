@@ -82,6 +82,14 @@ impl CameraPerspective {
         }]
     }
 
+    pub fn bind_entries(&self) -> Vec<wgpu::BindingResource<'_>> {
+        let buffer = self
+            .buffer
+            .as_ref()
+            .expect("CameraPerspective buffer not created");
+        vec![buffer.as_entire_binding()]
+    }
+
     pub fn activate(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) {
         let buffer = self.buffer.get_or_insert_with(|| {
             device.create_buffer_init(&wgpu::util::BufferInitDescriptor {

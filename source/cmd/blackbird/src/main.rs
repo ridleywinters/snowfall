@@ -14,6 +14,7 @@ fn main() {
         let mut renderer = Renderer3D::new(ctx.window.clone());
         let scene = Scene3D {
             camera: CameraPerspective::new(),
+            triangle_buffers: vec![],
         };
     });
     engine.task_frame(|_ctx| true);
