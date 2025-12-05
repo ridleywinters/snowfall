@@ -62,6 +62,10 @@ impl Renderer3D {
 
         scene.camera.update();
 
+        for triangle_buffer in &mut scene.triangle_buffers {
+            triangle_buffer.prepare(&self.device);
+        }
+
         run_render_pass(
             &mut encoder,
             &color_texture_view,

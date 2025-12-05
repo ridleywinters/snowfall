@@ -1,3 +1,7 @@
+use super::engine_ctx::EngineCtx;
+use super::engine_queue::EngineQueue;
+use super::engine_task::{EngineTask, EngineTaskHandle};
+use super::entity_database::EntityDatabase;
 use crate::core;
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
@@ -12,6 +16,16 @@ pub enum EngineError {
 
 pub type EngineWindow = Arc<Window>;
 
+pub struct EngineInternalState {
+    current_frame: usize,
+}
+
+impl EngineInternalState {
+    pub fn new() -> Self {
+        Self { current_frame: 0 }
+    }
+}
+
 pub struct Engine {
     pub title: String,
     pub development_mode: bool,
@@ -19,6 +33,7 @@ pub struct Engine {
 
     pub internal_state: Mutex<EngineInternalState>,
     pub tasks: Mutex<Vec<EngineTaskHandle>>,
+    pub database: Mutex<EntityDatabase>,
 }
 
 impl Engine {
@@ -29,12 +44,22 @@ impl Engine {
             local_storage: core::LocalStorage::new(),
             internal_state: Mutex::new(EngineInternalState::new()),
             tasks: Mutex::new(Vec::new()),
+            database: Mutex::new(EntityDatabase::new()),
         })
+    }
+
+    pub fn init(self: &Arc<Engine>, f: impl FnOnce(&mut EngineQueue)) {
+        let mut queue = EngineQueue::new();
+        f(&mut queue);
+
+        let tasks = &mut self.tasks.lock().unwrap();
+        for imp in queue.tasks.drain(..) {
+            tasks.push(EngineTaskHandle::new_boxed(imp));
+        }
     }
 
     pub fn run(self: Arc<Engine>) {
         super::prelude::init();
-
         super::prelude::run_event_loop(self.clone());
     }
 
@@ -54,6 +79,7 @@ impl Engine {
                 surface_height: height,
                 window: window.clone(),
                 queue: EngineQueue::new(),
+                database: EntityDatabase::new(),
             }
         };
         ctx
@@ -65,16 +91,27 @@ impl Engine {
         let mut tasks = Vec::new();
         self.swap_tasks(&mut tasks);
 
+        // Swap the contents of the engine database and context database
+        {
+            let mut db = self.database.lock().unwrap();
+            ctx.database.swap_entities(&mut db);
+        }
+
         let mut next_tasks = Vec::with_capacity(tasks.len());
         for mut task_handle in tasks {
             if task_handle.run_frame(&mut ctx) {
                 next_tasks.push(task_handle);
             }
+            if ctx.queue.entities.len() > 0 {
+                ctx.database.append(&mut ctx.queue.entities);
+            }
+        }
+        {
+            let mut db = self.database.lock().unwrap();
+            ctx.database.swap_entities(&mut db);
         }
         for imp in ctx.queue.tasks.drain(..) {
-            next_tasks.push(EngineTaskHandle {
-                imp: RefCell::new(imp),
-            });
+            next_tasks.push(EngineTaskHandle::new_boxed(imp));
         }
         self.swap_tasks(&mut next_tasks);
 
@@ -105,85 +142,5 @@ impl Engine {
         let handle = EngineTaskHandle::new(TaskOnce { f: RefCell::new(f) });
         let mut tasks = self.tasks.lock().unwrap();
         tasks.push(handle);
-    }
-}
-
-pub struct EngineInternalState {
-    current_frame: usize,
-}
-
-impl EngineInternalState {
-    pub fn new() -> Self {
-        Self { current_frame: 0 }
-    }
-}
-
-pub struct EngineQueue {
-    pub tasks: Vec<Box<dyn EngineTask>>,
-}
-
-impl EngineQueue {
-    pub fn new() -> Self {
-        Self { tasks: Vec::new() }
-    }
-
-    pub fn task(&mut self, imp: Box<dyn EngineTask>) {
-        self.tasks.push(imp);
-    }
-
-    pub fn task_once(&mut self, f: impl FnMut(&EngineCtx) + 'static) {
-        struct TaskOnce<F: FnMut(&EngineCtx)> {
-            f: RefCell<F>,
-        }
-        impl<F: FnMut(&EngineCtx)> EngineTask for TaskOnce<F> {
-            fn run_frame(&mut self, _ctx: &mut EngineCtx) -> bool {
-                (self.f.borrow_mut())(_ctx);
-                false
-            }
-        }
-        self.tasks.push(Box::new(TaskOnce { f: RefCell::new(f) }));
-    }
-
-    pub fn task_frame(&mut self, f: impl FnMut(&mut EngineCtx) -> bool + 'static) {
-        struct TaskFrame<F: FnMut(&mut EngineCtx) -> bool> {
-            f: RefCell<F>,
-        }
-        impl<F: FnMut(&mut EngineCtx) -> bool> EngineTask for TaskFrame<F> {
-            fn run_frame(&mut self, ctx: &mut EngineCtx) -> bool {
-                (self.f.borrow_mut())(ctx)
-            }
-        }
-        self.tasks.push(Box::new(TaskFrame { f: RefCell::new(f) }));
-    }
-}
-
-pub struct EngineCtx {
-    pub frame: usize,
-    pub surface_width: usize,
-    pub surface_height: usize,
-
-    pub window: EngineWindow,
-    pub queue: EngineQueue,
-}
-
-pub trait EngineTask {
-    fn run_frame(&mut self, _ctx: &mut EngineCtx) -> bool {
-        false
-    }
-}
-
-pub struct EngineTaskHandle {
-    imp: RefCell<Box<dyn EngineTask>>,
-}
-
-impl EngineTaskHandle {
-    pub fn new<T: EngineTask + 'static>(imp: T) -> Self {
-        Self {
-            imp: RefCell::new(Box::new(imp)),
-        }
-    }
-
-    pub fn run_frame(&self, ctx: &mut EngineCtx) -> bool {
-        self.imp.borrow_mut().run_frame(ctx)
     }
 }

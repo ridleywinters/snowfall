@@ -62,10 +62,10 @@ pub fn make_full_screen_quad(device: &wgpu::Device) -> TriangleBuffer {
     ];
     let index_array = vec![0, 1, 2, 2, 3, 0];
 
-    TriangleBuffer::new(device, &position_array, &color_array, &index_array)
+    TriangleBuffer::new(&position_array, &color_array, &index_array)
 }
 
-pub fn make_debug_cube(device: &wgpu::Device) -> TriangleBuffer {
+pub fn make_debug_cube() -> TriangleBuffer {
     let positions = [
         // Face (z = 1)
         ([-1.0, -1.0, 1.0], [0.0, 0.0, 1.0]),
@@ -121,7 +121,7 @@ pub fn make_debug_cube(device: &wgpu::Device) -> TriangleBuffer {
         index_array.push(i as u32);
     }
 
-    TriangleBuffer::new(device, &position_array, &color_array, &index_array)
+    TriangleBuffer::new(&position_array, &color_array, &index_array)
 }
 
 #[derive(Debug, Clone)]

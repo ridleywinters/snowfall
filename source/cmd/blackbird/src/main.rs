@@ -4,59 +4,61 @@
 mod core;
 mod engine;
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use engine::prelude::{CameraPerspective, Engine, EngineWindow, Renderer3D, Scene3D};
+use engine::prelude::{
+    CameraPerspective, Engine, EngineCtx, EngineTask, EngineWindow, Renderer3D, Scene3D,
+};
 use engine::renderer_3d::utils;
 
-use crate::engine::prelude::EngineTask;
-
-struct RendererTask {
-    renderer: Renderer3D,
-    scene: Scene3D,
+fn build_scene(ctx: &mut EngineCtx) {
+    let camera = CameraPerspective::new();
+    let mesh = utils::make_debug_cube();
+    let scene = Scene3D {
+        camera,
+        triangle_buffers: vec![mesh],
+    };
+    ctx.queue.entities.push(Box::new(scene));
 }
 
-impl RendererTask {
-    pub fn new(window: EngineWindow) -> Self {
-        let renderer = Renderer3D::new(window.clone());
-        let mesh = utils::make_debug_cube(&renderer.device);
-        let camera = CameraPerspective::new();
-        let scene = Scene3D {
-            camera,
-            triangle_buffers: vec![mesh],
-        };
-        Self { renderer, scene }
-    }
-}
+fn setup_renderer(ctx: &mut EngineCtx) {
+    let mut renderer = Renderer3D::new(ctx.window.clone());
+    let closure = move |ctx: &mut engine::prelude::EngineCtx| {
+        let scene = ctx
+            .database
+            .select_mut::<Scene3D>()
+            .expect("No Scene3D found in database");
 
-impl EngineTask for RendererTask {
-    fn run_frame(&mut self, ctx: &mut engine::prelude::EngineCtx) -> bool {
-        let mut camera = &mut self.scene.camera;
-        let radius = 4.0;
-        camera.position = glam::Vec3::new(
-            radius * (ctx.frame as f32 * 0.002).cos(),
-            radius * (ctx.frame as f32 * 0.002).sin(),
-            2.0,
-        );
-        camera.look_at = glam::Vec3::ZERO;
-        camera.world_up = glam::Vec3::Z;
-        camera.aspect_ratio = ctx.surface_width as f32 / ctx.surface_height as f32;
-
-        self.renderer.render_scene(&mut self.scene);
-        println!("Rendered 3D frame {}", ctx.frame);
+        renderer.render_scene(scene);
         true
-    }
+    };
+    ctx.queue.task_once(|ctx| {
+        println!("Renderer3D initialized.");
+    });
+    ctx.queue.task_frame(closure);
+}
+
+fn rotate_camera(ctx: &mut EngineCtx) -> bool {
+    let scene = ctx.database.must_select_mut::<Scene3D>();
+
+    let mut camera = &mut scene.camera;
+    let radius = 4.0;
+    camera.position = glam::Vec3::new(
+        radius * (ctx.frame as f32 * 0.002).cos(),
+        radius * (ctx.frame as f32 * 0.002).sin(),
+        2.0,
+    );
+    camera.look_at = glam::Vec3::ZERO;
+    camera.world_up = glam::Vec3::Z;
+    camera.aspect_ratio = ctx.surface_width as f32 / ctx.surface_height as f32;
+    true
 }
 
 fn main() {
     let engine = Engine::new("Snowfall (blackbird)".into(), true);
     println!("{}", engine.title);
-
-    engine.task_once(|ctx| {
-        println!("Engine started!");
-        let task = RendererTask::new(ctx.window.clone());
-        ctx.queue.task(Box::new(task));
+    engine.init(|mut q| {
+        q.task_once(build_scene);
+        q.task_frame(rotate_camera);
+        q.task_once(setup_renderer);
     });
     engine.run();
 }
