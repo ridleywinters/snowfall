@@ -6,7 +6,7 @@ mod renderer_3d;
 mod scene_3d;
 mod shader_source_builder;
 mod triangle_buffer;
-mod utils;
+pub mod utils;
 mod vertex;
 
 pub use camera_perspective::CameraPerspective;

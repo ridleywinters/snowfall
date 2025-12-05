@@ -90,7 +90,7 @@ impl CameraPerspective {
         vec![buffer.as_entire_binding()]
     }
 
-    pub fn activate(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) {
+    pub fn prepare(&mut self, device: &wgpu::Device) {
         let buffer = self.buffer.get_or_insert_with(|| {
             device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("CameraPerspective Uniform Buffer"),
@@ -98,6 +98,14 @@ impl CameraPerspective {
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             })
         });
+    }
+
+    pub fn activate(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) {
+        self.prepare(device);
+        let buffer = self
+            .buffer
+            .as_ref()
+            .expect("CameraPerspective buffer not created");
         queue.write_buffer(buffer, 0, bytemuck::cast_slice(&[self.data]));
     }
 }

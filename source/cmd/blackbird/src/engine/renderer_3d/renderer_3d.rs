@@ -74,7 +74,7 @@ impl Renderer3D {
                             &self.device,
                             &self.surface_config,
                             self.depth_texture.texture.format(),
-                            &scene.camera,
+                            &mut scene.camera,
                         );
 
                         println!(

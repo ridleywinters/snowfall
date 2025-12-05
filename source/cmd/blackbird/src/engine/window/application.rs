@@ -77,14 +77,6 @@ impl ApplicationHandler for Application {
                 );
             }
             WindowEvent::RedrawRequested => {
-                //
-                // Check we have valid objects for the redraw or early exit.
-                //
-                /*let (Some(window), Some(handler)) = (self.window.as_ref(), self.handler.as_mut())
-                else {
-                    return;
-                };*/
-
                 let Some(window) = self.window.as_ref() else {
                     return;
                 };

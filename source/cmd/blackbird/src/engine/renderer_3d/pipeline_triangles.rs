@@ -16,7 +16,7 @@ impl PipelineTriangles {
         device: &wgpu::Device, //
         config: &wgpu::SurfaceConfiguration,
         depth_format: wgpu::TextureFormat,
-        camera: &CameraPerspective,
+        camera: &mut CameraPerspective,
     ) -> Self {
         let mut shader_builder = ShaderSourceBuilder::new();
         shader_builder.source(include_str!("pipeline_triangles.tmpl.wgsl"));
@@ -27,6 +27,8 @@ impl PipelineTriangles {
         });
 
         // Create the layout and the entries
+        camera.prepare(&device);
+
         let (mut layouts, mut entries) = (vec![], vec![]);
         layouts.extend(camera.layout_entries());
         entries.extend(camera.bind_entries());
