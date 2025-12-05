@@ -21,8 +21,9 @@ impl RendererTask {
     pub fn new(window: EngineWindow) -> Self {
         let renderer = Renderer3D::new(window.clone());
         let mesh = utils::make_debug_cube(&renderer.device);
+        let camera = CameraPerspective::new();
         let scene = Scene3D {
-            camera: CameraPerspective::new(),
+            camera,
             triangle_buffers: vec![mesh],
         };
         Self { renderer, scene }
@@ -31,6 +32,17 @@ impl RendererTask {
 
 impl EngineTask for RendererTask {
     fn run_frame(&mut self, ctx: &mut engine::prelude::EngineCtx) -> bool {
+        let mut camera = &mut self.scene.camera;
+        let radius = 4.0;
+        camera.position = glam::Vec3::new(
+            radius * (ctx.frame as f32 * 0.002).cos(),
+            radius * (ctx.frame as f32 * 0.002).sin(),
+            2.0,
+        );
+        camera.look_at = glam::Vec3::ZERO;
+        camera.world_up = glam::Vec3::Z;
+        camera.aspect_ratio = ctx.surface_width as f32 / ctx.surface_height as f32;
+
         self.renderer.render_scene(&mut self.scene);
         println!("Rendered 3D frame {}", ctx.frame);
         true

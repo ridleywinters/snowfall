@@ -20,8 +20,10 @@ impl PipelineTriangles {
     ) -> Self {
         let mut shader_builder = ShaderSourceBuilder::new();
         shader_builder.source(include_str!("pipeline_triangles.tmpl.wgsl"));
+        shader_builder.mixin(camera.wgsl_template());
         let source = shader_builder.build("triangles");
         shader_builder.log_to_file("pipeline_triangles", &source);
+
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(source.into()),

@@ -1,11 +1,23 @@
 //===========================================================================//
-// Vertex Input and Output
+// Declarations
 //===========================================================================//
 
-struct UniformCamera {
-    view_proj : mat4x4<f32>, 
-}
-@group(0) @binding(0) var<uniform> uniform_camera : UniformCamera;
+{{#each declarations}}
+{{this}}
+{{/each}}
+
+//===========================================================================//
+// Bindings
+//===========================================================================//
+
+{{#each bindings}}
+@group(0) @binding({{@index}}) {{this}}
+{{/each}}
+
+
+//===========================================================================//
+// Vertex Input and Output
+//===========================================================================//
 
 struct VertexInput {
     @location(0) position : vec3<f32>,
@@ -27,7 +39,7 @@ fn vs_main(
 ) -> FragInput {    
 
     var out : FragInput;
-    out.position = uniform_camera.view_proj * vec4<f32>(vertex.position, 1.0);
+    out.position = camera.view_proj * vec4<f32>(vertex.position, 1.0);
     out.color = vertex.color;
     return out;
 }
