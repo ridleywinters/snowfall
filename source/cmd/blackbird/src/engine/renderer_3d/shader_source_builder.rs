@@ -46,9 +46,18 @@ impl ShaderSourceBuilder {
     }
 
     pub fn build(&self, name: &str) -> String {
-        // TODO: log this to a file somewhere in the runtime folder for debugging
         let source = self.tt.render("shader", &self.ctx).unwrap();
         source
+    }
+
+    pub fn log_to_file(&self, shader_name: &str, source: &str) {
+        use std::fs;
+        use std::path::PathBuf;
+
+        let mut path = PathBuf::from("runtime/shaders");
+        fs::create_dir_all(&path).unwrap();
+        path.push(format!("{}.wgsl", shader_name));
+        fs::write(&path, source).unwrap();
     }
 }
 
