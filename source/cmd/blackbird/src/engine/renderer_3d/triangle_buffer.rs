@@ -1,3 +1,5 @@
+use crate::geometry::BBox;
+
 use super::internal::*;
 use super::vertex::Vertex;
 
@@ -29,6 +31,26 @@ impl TriangleBuffer {
             vertex_buffer: None,
             index_buffer: None,
         }
+    }
+
+    //-----------------------------------------------------------------------//
+    // Properties
+    //-----------------------------------------------------------------------//
+
+    pub fn bounding_box(&self) -> BBox {
+        let position_array = self
+            .position_array
+            .as_ref()
+            .expect("TriangleBuffer position array not set");
+
+        let mut min = Vec3::splat(f32::INFINITY);
+        let mut max = Vec3::splat(f32::NEG_INFINITY);
+        for pos in position_array.iter() {
+            min = min.min(*pos);
+            max = max.max(*pos);
+        }
+
+        BBox::from_min_max(min, max)
     }
 
     //-----------------------------------------------------------------------//

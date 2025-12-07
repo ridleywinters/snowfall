@@ -3,18 +3,26 @@
 
 mod core;
 mod engine;
+mod geometry;
 
 use engine::prelude::{
     CameraPerspective, Engine, EngineCtx, EngineTask, EngineWindow, Renderer3D, Scene3D,
 };
 use engine::renderer_3d::utils;
+use glam::Vec3;
 
 fn build_scene(ctx: &mut EngineCtx) {
     let camera = CameraPerspective::new();
-    let mesh = utils::make_debug_cube();
+
+    let mut mesh = geometry::make_debug_cube_mesh();
+    mesh.vertex_selection()
+        .all()
+        .scale(Vec3::splat(0.5))
+        .translate(Vec3::splat(0.5));
+
     let scene = Scene3D {
         camera,
-        triangle_buffers: vec![mesh],
+        triangle_buffers: vec![mesh.to_triangle_buffer()],
     };
     ctx.queue.entities.push(Box::new(scene));
 }
@@ -38,15 +46,17 @@ fn setup_renderer(ctx: &mut EngineCtx) {
 
 fn rotate_camera(ctx: &mut EngineCtx) -> bool {
     let scene = ctx.database.must_select_mut::<Scene3D>();
-
-    let mut camera = &mut scene.camera;
-    let radius = 4.0;
-    camera.position = glam::Vec3::new(
+    let bbox = scene.bounding_box();
+    let radius = bbox.size().length() * 1.5;
+    let offset = glam::Vec3::new(
         radius * (ctx.frame as f32 * 0.002).cos(),
         radius * (ctx.frame as f32 * 0.002).sin(),
-        2.0,
+        radius * 0.5,
     );
-    camera.look_at = glam::Vec3::ZERO;
+
+    let mut camera = &mut scene.camera;
+    camera.position = bbox.center() + offset;
+    camera.look_at = bbox.center();
     camera.world_up = glam::Vec3::Z;
     camera.aspect_ratio = ctx.surface_width as f32 / ctx.surface_height as f32;
     true

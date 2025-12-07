@@ -12,6 +12,7 @@ mod vertex;
 pub use camera_perspective::CameraPerspective;
 pub use renderer_3d::Renderer3D;
 pub use scene_3d::Scene3D;
+pub use triangle_buffer::TriangleBuffer;
 
 pub mod internal {
     pub use super::*;
