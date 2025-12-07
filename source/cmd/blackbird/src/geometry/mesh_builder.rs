@@ -1,9 +1,25 @@
+use std::collections::HashMap;
+
 use super::internal::*;
 use super::triangle_mesh::{MeshVertex, TriangleMesh};
 
-pub struct MeshBuilder {}
+pub struct MeshBuilder {
+    library: HashMap<String, TriangleMesh>,
+}
 
 impl MeshBuilder {
+    pub fn register(&mut self, name: &str, mesh: TriangleMesh) {
+        self.library.insert(name.to_string(), mesh);
+    }
+
+    pub fn get(&self, name: &str) -> Option<TriangleMesh> {
+        if let Some(mesh) = self.library.get(name) {
+            Some(mesh.clone())
+        } else {
+            None
+        }
+    }
+
     pub fn make_unit_cube() -> TriangleMesh {
         let mut mesh = Self::make_debug_cube_mesh();
         mesh.vertex_selection()
