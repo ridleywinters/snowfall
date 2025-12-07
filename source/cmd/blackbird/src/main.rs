@@ -9,21 +9,31 @@ use engine::prelude::{
     CameraPerspective, Engine, EngineCtx, EngineTask, EngineWindow, Renderer3D, Scene3D,
 };
 use engine::renderer_3d::utils;
+use geometry::MeshBuilder;
 use glam::Vec3;
 
 fn build_scene(ctx: &mut EngineCtx) {
-    let camera = CameraPerspective::new();
+    let mut scene = Scene3D::new();
+    let unit = MeshBuilder::make_unit_cube();
 
-    let mut mesh = geometry::make_debug_cube_mesh();
-    mesh.vertex_selection()
-        .all()
-        .scale(Vec3::splat(0.5))
-        .translate(Vec3::splat(0.5));
+    let mut c1 = unit.clone();
+    c1.vertex_selection()
+        .add(|v| v.position.z > 0.5)
+        .translate(0.0, 0.0, 7.0);
+    scene.add(c1.to_triangle_buffer());
 
-    let scene = Scene3D {
-        camera,
-        triangle_buffers: vec![mesh.to_triangle_buffer()],
-    };
+    let mut c2 = c1.clone();
+    c2.translate(7.0, 0.0, 0.0);
+    scene.add(c2.to_triangle_buffer());
+
+    let mut c3 = c1.clone();
+    c3.translate(7.0, 7.0, 0.0);
+    scene.add(c3.to_triangle_buffer());
+
+    let mut c4 = c1.clone();
+    c4.translate(0.0, 7.0, 0.0);
+    scene.add(c4.to_triangle_buffer());
+
     ctx.queue.entities.push(Box::new(scene));
 }
 

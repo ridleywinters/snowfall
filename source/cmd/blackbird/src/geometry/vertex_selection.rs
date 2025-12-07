@@ -73,10 +73,11 @@ impl<'a> VertexSelection<'a> {
     //=========================================================================
 
     /// Translates all selected vertices by the given offset.
-    pub fn translate(self, offset: Vec3) -> Self {
+    pub fn translate(self, tx: f32, ty: f32, tz: f32) -> Self {
+        let t = Vec3::new(tx, ty, tz);
         for &idx in &self.indices {
             if let Some(vertex) = self.mesh.vertices.get_mut(idx) {
-                vertex.position += offset;
+                vertex.position += t;
             }
         }
         self
