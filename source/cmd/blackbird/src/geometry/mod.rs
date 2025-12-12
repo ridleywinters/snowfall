@@ -1,9 +1,11 @@
 mod bbox;
+mod line_mesh;
 mod mesh_builder;
 mod triangle_mesh;
 mod vertex_selection;
 
 pub use bbox::BBox;
+pub use line_mesh::LineMesh;
 pub use mesh_builder::MeshBuilder;
 pub use triangle_mesh::{MeshVertex, TriangleMesh};
 pub use vertex_selection::VertexSelection;

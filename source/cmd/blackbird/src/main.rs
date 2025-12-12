@@ -9,8 +9,10 @@ use engine::prelude::{
     CameraPerspective, Engine, EngineCtx, EngineTask, EngineWindow, Renderer3D, Scene3D,
 };
 use engine::renderer_3d::utils;
-use geometry::MeshBuilder;
+use geometry::{LineMesh, MeshBuilder};
 use glam::Vec3;
+
+use crate::engine::renderer_3d::LineBuffer;
 
 fn build_scene(ctx: &mut EngineCtx) {
     let mut scene = Scene3D::new();
@@ -31,8 +33,13 @@ fn build_scene(ctx: &mut EngineCtx) {
     scene.add(c3.to_triangle_buffer());
 
     let mut c4 = c1.clone();
+    c4.vertex_selection()
+        .all()
+        .set_color(Vec3::new(1.0, 1.0, 1.0));
     c4.translate(0.0, 7.0, 0.0);
-    scene.add(c4.to_triangle_buffer());
+    let mut c5 = LineMesh::from_triangle_mesh(&c4);
+    c5.remove_nonorthographic_lines();
+    scene.add_line_buffer(c5.to_line_buffer());
 
     ctx.queue.entities.push(Box::new(scene));
 }

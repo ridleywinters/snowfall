@@ -4,7 +4,7 @@ use super::internal::*;
 use super::vertex::Vertex;
 
 #[derive(Debug)]
-pub struct TriangleBuffer {
+pub struct LineBuffer {
     position_array: Option<Vec<Vec3>>,
     color_array: Option<Vec<Vec3>>,
     index_array: Option<Vec<u32>>,
@@ -13,17 +13,17 @@ pub struct TriangleBuffer {
     index_buffer: Option<wgpu::Buffer>,
 }
 
-impl TriangleBuffer {
+impl LineBuffer {
     //-----------------------------------------------------------------------//
     // Construction
     //-----------------------------------------------------------------------//
 
     pub fn new(
-        position_array: &Vec<Vec3>, //
-        color_array: &Vec<Vec3>,    //
+        position_array: &Vec<Vec3>,
+        color_array: &Vec<Vec3>,
         index_array: &Vec<u32>,
-    ) -> TriangleBuffer {
-        TriangleBuffer {
+    ) -> LineBuffer {
+        LineBuffer {
             position_array: Some(position_array.clone()),
             color_array: Some(color_array.clone()),
             index_array: Some(index_array.clone()),
@@ -41,7 +41,7 @@ impl TriangleBuffer {
         let position_array = self
             .position_array
             .as_ref()
-            .expect("TriangleBuffer position array not set");
+            .expect("LineBuffer position array not set");
 
         BBox::from_array(position_array)
     }
@@ -75,12 +75,12 @@ impl TriangleBuffer {
         };
 
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
+            label: Some("Line Vertex Buffer"),
             contents: bytemuck::cast_slice(&vertices),
             usage: wgpu::BufferUsages::VERTEX,
         });
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Index Buffer"),
+            label: Some("Line Index Buffer"),
             contents: bytemuck::cast_slice(&indices),
             usage: wgpu::BufferUsages::INDEX,
         });
@@ -89,20 +89,20 @@ impl TriangleBuffer {
         self.index_buffer = Some(index_buffer);
     }
 
-    // Adds the commands to render the triangle buffer to the queue
+    // Adds the commands to render the line buffer to the queue
     //
     pub fn activate(&self, render_pass: &mut wgpu::RenderPass) {
         let vertex_buffer = self
             .vertex_buffer
             .as_ref()
-            .expect("TriangleBuffer vertex buffer not created");
+            .expect("LineBuffer vertex buffer not created");
         let index_buffer = self
             .index_buffer
             .as_ref()
-            .expect("TriangleBuffer index buffer not created");
+            .expect("LineBuffer index buffer not created");
 
         if vertex_buffer.size() == 0 {
-            panic!("TriangleBuffer has no vertices to render");
+            panic!("LineBuffer has no vertices to render");
         }
 
         render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));

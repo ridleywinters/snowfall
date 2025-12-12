@@ -45,6 +45,17 @@ impl BBox {
         bbox
     }
 
+    /// Creates a BBox from an array of positions by computing min/max.
+    pub fn from_array(position_array: &[Vec3]) -> Self {
+        let mut min = Vec3::splat(f32::INFINITY);
+        let mut max = Vec3::splat(f32::NEG_INFINITY);
+        for pos in position_array.iter() {
+            min = min.min(*pos);
+            max = max.max(*pos);
+        }
+        Self::from_min_max(min, max)
+    }
+
     //=========================================================================
     // Properties
     //=========================================================================

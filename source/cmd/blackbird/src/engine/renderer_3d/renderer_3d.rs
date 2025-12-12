@@ -13,6 +13,7 @@ pub struct Renderer3D {
 
     // --- Pipelines ---
     pub pipeline_triangles: Option<PipelineTriangles>,
+    pub pipeline_lines: Option<PipelineLines>,
 }
 
 impl Renderer3D {
@@ -42,6 +43,7 @@ impl Renderer3D {
             depth_texture,
 
             pipeline_triangles: None,
+            pipeline_lines: None,
         }
     }
 
@@ -64,6 +66,10 @@ impl Renderer3D {
 
         for triangle_buffer in &mut scene.triangle_buffers {
             triangle_buffer.prepare(&self.device);
+        }
+
+        for line_buffer in &mut scene.line_buffers {
+            line_buffer.prepare(&self.device);
         }
 
         run_render_pass(
@@ -94,6 +100,32 @@ impl Renderer3D {
 
                     for triangle_buffer in &scene.triangle_buffers {
                         triangle_buffer.activate(pass);
+                    }
+                }
+
+                if !scene.line_buffers.is_empty() {
+                    let pipeline = self.pipeline_lines.get_or_insert_with(|| {
+                        let start_time = std::time::Instant::now();
+                        let pipeline = PipelineLines::new(
+                            &self.device,
+                            &self.surface_config,
+                            self.depth_texture.texture.format(),
+                            &mut scene.camera,
+                        );
+
+                        println!(
+                            "PipelineLines created in {} ms",
+                            start_time.elapsed().as_millis()
+                        );
+                        pipeline
+                    });
+                    pass.set_pipeline(&pipeline.pipeline);
+                    pass.set_bind_group(0, &pipeline.bind_group, &[]);
+
+                    scene.camera.activate(&self.device, &self.queue);
+
+                    for line_buffer in &scene.line_buffers {
+                        line_buffer.activate(pass);
                     }
                 }
             },
